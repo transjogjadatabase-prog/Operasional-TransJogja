@@ -56,20 +56,34 @@ function applySidebarState() {
   const main    = document.querySelector('.main');
   const icon    = document.getElementById('sidebar-icon');
   if (!sidebar) return;
+
   if (sidebarOpen) {
-    sidebar.classList.remove('hidden');
-    overlay.classList.add('show');
-    main.classList.add('sidebar-visible');
+    sidebar.classList.add('open');
+    main.classList.add('sidebar-open');
+    // Only show overlay on mobile
+    if (window.innerWidth <= 900) {
+      overlay.classList.add('show');
+    }
     if (icon) icon.className = 'fas fa-times';
   } else {
-    sidebar.classList.add('hidden');
+    sidebar.classList.remove('open');
+    main.classList.remove('sidebar-open');
     overlay.classList.remove('show');
-    main.classList.remove('sidebar-visible');
     if (icon) icon.className = 'fas fa-bars';
   }
 }
 
-// sidebar init handled in INIT block below
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 900) {
+    // Desktop: always show sidebar, no overlay
+    if (!sidebarOpen) { sidebarOpen = true; applySidebarState(); }
+    document.getElementById('sidebar-overlay').classList.remove('show');
+  } else {
+    // Mobile: hide sidebar
+    if (sidebarOpen) { sidebarOpen = false; applySidebarState(); }
+  }
+});
+
 window.addEventListener('resize', () => {
   if (window.innerWidth > 900 && !sidebarOpen) {
     sidebarOpen = true;
@@ -601,9 +615,13 @@ async function refreshData(){
     m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
   });
 
-  // Sidebar initial state
+  // Sidebar: open on desktop, closed on mobile
   sidebarOpen = window.innerWidth > 900;
   applySidebarState();
+  // On desktop, no overlay needed
+  if (window.innerWidth > 900) {
+    document.getElementById('sidebar-overlay').classList.remove('show');
+  }
 
   // Load data
   await Promise.all([loadBus(), loadSpbu()]);
