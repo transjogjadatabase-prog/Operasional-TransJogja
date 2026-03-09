@@ -1,7 +1,13 @@
 // ============================================================
+// SUPABASE CONFIG — ganti URL dan KEY dengan milik Anda
+// ============================================================
+const SUPABASE_URL      = 'https://XXXXXXXXXXXX.supabase.co';   // ← ganti
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ← ganti
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================
 // app.js — Operasional TransJogja (dengan Supabase)
 // ============================================================
-import { supabase } from './supabase.js';
 
 // ============ STATE ============
 let DB = { bus: [], spbu: [], bbm: [], ops: [] };
@@ -627,5 +633,3 @@ async function refreshData(){
   await Promise.all([loadBus(), loadSpbu()]);
   await updateDashboard();
 })();
-
-Object.assign(window,{toggleSidebar,applySidebarState,downloadTemplate,goPage,openModal,closeModal,saveBus,editBus,delBus,saveSpbu,editSpbu,delSpbu,saveBBM,editBBM,delBBM,autofillBBM,saveOps,editOps,delOps,autofillOps,calcOps,filterTable,importData,exportExcel,exportExcelReport,exportPDF,generateLapWaktu,generateLapBBM,generateLapOps,showWaktuTab,populateSpbuFilter,populateLambFilter,previewFoto,refreshData});
