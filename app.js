@@ -601,4 +601,4 @@ async function refreshData(){
 // ============================================================
 (async()=>{ await Promise.all([loadBus(),loadSpbu()]); await updateDashboard(); })();
 
-Object.assign(window,{toggleSidebar,applySidebarState,goPage,openModal,closeModal,saveBus,editBus,delBus,saveSpbu,editSpbu,delSpbu,saveBBM,editBBM,delBBM,autofillBBM,saveOps,editOps,delOps,autofillOps,calcOps,filterTable,importData,exportExcel,exportExcelReport,exportPDF,generateLapWaktu,generateLapBBM,generateLapOps,showWaktuTab,populateSpbuFilter,populateLambFilter,previewFoto,refreshData});
+Object.assign(window,{toggleSidebar,applySidebarState,downloadTemplate,goPage,openModal,closeModal,saveBus,editBus,delBus,saveSpbu,editSpbu,delSpbu,saveBBM,editBBM,delBBM,autofillBBM,saveOps,editOps,delOps,autofillOps,calcOps,filterTable,importData,exportExcel,exportExcelReport,exportPDF,generateLapWaktu,generateLapBBM,generateLapOps,showWaktuTab,populateSpbuFilter,populateLambFilter,previewFoto,refreshData});
