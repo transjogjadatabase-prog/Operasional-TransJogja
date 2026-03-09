@@ -18,15 +18,8 @@
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#1a5c2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="5" width="20" height="13" rx="3"/>
-        <path d="M2 10h20"/>
-        <circle cx="7" cy="18" r="1.5" fill="#1a5c2a" stroke="none"/>
-        <circle cx="17" cy="18" r="1.5" fill="#1a5c2a" stroke="none"/>
-        <path d="M7 5V3M17 5V3"/>
-        <path d="M2 13h2M20 13h2"/>
-      </svg>
+    <div class="logo-icon" style="background:transparent;padding:0;">
+      <img src="logo.png" alt="TransJogja" style="width:46px;height:46px;object-fit:contain;border-radius:10px;">
     </div>
     <div class="logo-text">
       <div class="title">TransJogja</div>
@@ -183,6 +176,7 @@
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari lambung, polisi, jalur..." oninput="filterTable('tbl-bus',this.value)"></div>
           <div class="table-actions">
+            <button class="btn btn-outline btn-sm" onclick="downloadTemplate('bus')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('bus',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('bus')"><i class="fas fa-file-excel"></i> Export Excel</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-bus')"><i class="fas fa-plus"></i> Tambah Bus</button>
@@ -209,6 +203,7 @@
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari nama, alamat..." oninput="filterTable('tbl-spbu',this.value)"></div>
           <div class="table-actions">
+            <button class="btn btn-outline btn-sm" onclick="downloadTemplate('spbu')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('spbu',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('spbu')"><i class="fas fa-file-excel"></i> Export Excel</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-spbu')"><i class="fas fa-plus"></i> Tambah SPBU</button>
@@ -235,6 +230,7 @@
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari lambung, jalur..." oninput="filterTable('tbl-bbm',this.value)"></div>
           <div class="table-actions">
+            <button class="btn btn-outline btn-sm" onclick="downloadTemplate('bbm')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('bbm',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('bbm')"><i class="fas fa-file-excel"></i> Export Excel</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-bbm')"><i class="fas fa-plus"></i> Tambah</button>
@@ -261,6 +257,7 @@
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari lambung, jalur..." oninput="filterTable('tbl-ops',this.value)"></div>
           <div class="table-actions">
+            <button class="btn btn-outline btn-sm" onclick="downloadTemplate('ops')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('ops',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('ops')"><i class="fas fa-file-excel"></i> Export Excel</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-ops')"><i class="fas fa-plus"></i> Tambah</button>
