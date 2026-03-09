@@ -40,7 +40,7 @@ function setDateNow() {
   document.getElementById('page-date').textContent =
     now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
-setDateNow();
+// setDateNow called in init
 
 // ============ SIDEBAR TOGGLE ============
 let sidebarOpen = false;
@@ -69,12 +69,7 @@ function applySidebarState() {
   }
 }
 
-// On load: open on desktop, closed on mobile
-window.addEventListener('DOMContentLoaded', () => {
-  sidebarOpen = window.innerWidth > 900;
-  applySidebarState();
-});
-
+// sidebar init handled in INIT block below
 window.addEventListener('resize', () => {
   if (window.innerWidth > 900 && !sidebarOpen) {
     sidebarOpen = true;
@@ -97,9 +92,7 @@ function closeModal(id) {
   if (editIdx[type] !== undefined) editIdx[type] = -1;
   clearForm(id);
 }
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
-});
+// modal overlay listeners added in init
 function clearForm(modalId) {
   document.querySelectorAll(`#${modalId} input, #${modalId} textarea, #${modalId} select`).forEach(el => {
     if (el.type === 'file') return;
@@ -597,8 +590,24 @@ async function refreshData(){
 }
 
 // ============================================================
-// INIT
+// INIT — runs after DOM is ready (type="module" defers automatically)
 // ============================================================
-(async()=>{ await Promise.all([loadBus(),loadSpbu()]); await updateDashboard(); })();
+(async () => {
+  // Setup date
+  setDateNow();
+
+  // Setup modal overlay click-outside-to-close
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+  });
+
+  // Sidebar initial state
+  sidebarOpen = window.innerWidth > 900;
+  applySidebarState();
+
+  // Load data
+  await Promise.all([loadBus(), loadSpbu()]);
+  await updateDashboard();
+})();
 
 Object.assign(window,{toggleSidebar,applySidebarState,downloadTemplate,goPage,openModal,closeModal,saveBus,editBus,delBus,saveSpbu,editSpbu,delSpbu,saveBBM,editBBM,delBBM,autofillBBM,saveOps,editOps,delOps,autofillOps,calcOps,filterTable,importData,exportExcel,exportExcelReport,exportPDF,generateLapWaktu,generateLapBBM,generateLapOps,showWaktuTab,populateSpbuFilter,populateLambFilter,previewFoto,refreshData});
