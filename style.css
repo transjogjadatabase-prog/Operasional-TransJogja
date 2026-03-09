@@ -228,8 +228,23 @@
   .page-banner { background:linear-gradient(135deg,var(--green-dark),var(--green-main)); border-radius:var(--radius); padding:28px 32px; margin-bottom:28px; display:flex; align-items:center; justify-content:space-between; overflow:hidden; position:relative; }
   .page-banner::before { content:''; position:absolute; top:-30px; right:-30px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,0.07); }
   .page-banner::after { content:''; position:absolute; bottom:-40px; right:80px; width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,0.05); }
-  .page-banner h2 { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:white; }
-  .page-banner p { font-size:13px; color:rgba(255,255,255,0.7); margin-top:6px; }
+  .page-banner h2 {
+    font-family: 'Playfair Display', 'Georgia', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.3px;
+    line-height: 1.25;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  }
+  .page-banner p {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.75);
+    margin-top: 7px;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
   .page-banner .stats-mini { display:flex; gap:24px; }
   .stats-mini-item { text-align:center; }
   .stats-mini-item .val { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:var(--yellow); }
