@@ -42,6 +42,50 @@ function setDateNow() {
 }
 setDateNow();
 
+// ============ SIDEBAR TOGGLE ============
+let sidebarOpen = window.innerWidth > 900;
+
+function toggleSidebar() {
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('sidebar-overlay');
+  const main     = document.querySelector('.main');
+  const icon     = document.getElementById('sidebar-icon');
+  sidebarOpen = !sidebarOpen;
+  if (sidebarOpen) {
+    sidebar.classList.remove('hidden');
+    overlay.classList.add('show');
+    main.classList.remove('expanded');
+    icon.className = 'fas fa-times';
+  } else {
+    sidebar.classList.add('hidden');
+    overlay.classList.remove('show');
+    main.classList.add('expanded');
+    icon.className = 'fas fa-bars';
+  }
+}
+
+// Init state based on screen size
+(function initSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main    = document.querySelector('.main');
+  const icon    = document.getElementById('sidebar-icon');
+  if (window.innerWidth <= 900) {
+    sidebarOpen = false;
+    sidebar.classList.add('hidden');
+    main.classList.add('expanded');
+    icon.className = 'fas fa-bars';
+  }
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 900 && !sidebarOpen) {
+      sidebarOpen = true;
+      sidebar.classList.remove('hidden');
+      document.getElementById('sidebar-overlay').classList.remove('show');
+      main.classList.remove('expanded');
+      icon.className = 'fas fa-bars';
+    }
+  });
+})();
+
 // ============ MODALS ============
 function openModal(id) {
   if (id === 'modal-bbm') { populateLambDropdowns(); populateSpbuDropdowns(); }
@@ -558,4 +602,4 @@ async function refreshData(){
 // ============================================================
 (async()=>{ await Promise.all([loadBus(),loadSpbu()]); await updateDashboard(); })();
 
-Object.assign(window,{goPage,openModal,closeModal,saveBus,editBus,delBus,saveSpbu,editSpbu,delSpbu,saveBBM,editBBM,delBBM,autofillBBM,saveOps,editOps,delOps,autofillOps,calcOps,filterTable,importData,exportExcel,exportExcelReport,exportPDF,generateLapWaktu,generateLapBBM,generateLapOps,showWaktuTab,populateSpbuFilter,populateLambFilter,previewFoto,refreshData});
+Object.assign(window,{toggleSidebar,goPage,openModal,closeModal,saveBus,editBus,delBus,saveSpbu,editSpbu,delSpbu,saveBBM,editBBM,delBBM,autofillBBM,saveOps,editOps,delOps,autofillOps,calcOps,filterTable,importData,exportExcel,exportExcelReport,exportPDF,generateLapWaktu,generateLapBBM,generateLapOps,showWaktuTab,populateSpbuFilter,populateLambFilter,previewFoto,refreshData});
