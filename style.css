@@ -51,15 +51,16 @@ body {
 }
 
 .sidebar-overlay {
-  display: none;
+  display: block;
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.45);
   z-index: 150;
   backdrop-filter: blur(2px);
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.3s;
 }
-.sidebar-overlay.show { display: block; opacity: 1; }
+.sidebar-overlay.show { opacity: 1; pointer-events: auto; }
 
 .btn-toggle-sidebar {
   display: flex; align-items: center; justify-content: center;
