@@ -389,6 +389,10 @@ textarea { resize:vertical; min-height:80px; }
 
 /* ========== MULTI DELETE ========== */
 .cb-select { accent-color:var(--green-main); width:15px; height:15px; cursor:pointer; }
+.cb-row { display:none; }
+.delete-mode .cb-row { display:inline-block; }
+.cb-th-hide { display:none; }
+.delete-mode .cb-th-hide { display:table-cell; }
 .bulk-bar {
   display:none; align-items:center; gap:10px;
   background:var(--green-pale); border:1.5px solid var(--green-main);
