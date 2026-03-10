@@ -207,6 +207,12 @@
         <div><h2>Data Bus</h2><p>Kelola data armada bus TransJogja</p></div>
       </div>
       <div class="card">
+        <div class="bulk-bar" id="bulk-bar-bus">
+          <span class="sel-count" id="bulk-count-bus">0 dipilih</span>
+          <button class="btn-bulk-cancel" onclick="clearSelect('bus')">Batal</button>
+          <button class="btn-bulk-del" onclick="bulkDelete('bus')"><i class="fas fa-trash"></i> Hapus Terpilih</button>
+          <button class="btn-bulk-del" style="background:#7b2d2d;" onclick="deleteAll('bus')"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
+        </div>
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari lambung, polisi, jalur..." oninput="filterTable('tbl-bus',this.value)"></div>
           <div class="table-actions">
@@ -219,6 +225,7 @@
         <div class="table-wrap">
           <table id="tbl-bus">
             <thead><tr>
+              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bus',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Lambung</th><th>No Polisi</th><th>Jalur</th><th>Tipe Bus</th><th>Karoseri</th><th>Warna</th><th>Keterangan</th><th>Foto</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-bus"></tbody>
@@ -234,6 +241,12 @@
         <div><h2>Data SPBU</h2><p>Kelola data stasiun pengisian BBM</p></div>
       </div>
       <div class="card">
+        <div class="bulk-bar" id="bulk-bar-spbu">
+          <span class="sel-count" id="bulk-count-spbu">0 dipilih</span>
+          <button class="btn-bulk-cancel" onclick="clearSelect('spbu')">Batal</button>
+          <button class="btn-bulk-del" onclick="bulkDelete('spbu')"><i class="fas fa-trash"></i> Hapus Terpilih</button>
+          <button class="btn-bulk-del" style="background:#7b2d2d;" onclick="deleteAll('spbu')"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
+        </div>
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari nama, alamat..." oninput="filterTable('tbl-spbu',this.value)"></div>
           <div class="table-actions">
@@ -246,6 +259,7 @@
         <div class="table-wrap">
           <table id="tbl-spbu">
             <thead><tr>
+              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('spbu',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Nama SPBU</th><th>ID SPBU</th><th>Alamat</th><th>No HP</th><th>Status</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-spbu"></tbody>
@@ -261,6 +275,12 @@
         <div><h2>Input BBM</h2><p>Catat pengisian bahan bakar armada</p></div>
       </div>
       <div class="card">
+        <div class="bulk-bar" id="bulk-bar-bbm">
+          <span class="sel-count" id="bulk-count-bbm">0 dipilih</span>
+          <button class="btn-bulk-cancel" onclick="clearSelect('bbm')">Batal</button>
+          <button class="btn-bulk-del" onclick="bulkDelete('bbm')"><i class="fas fa-trash"></i> Hapus Terpilih</button>
+          <button class="btn-bulk-del" style="background:#7b2d2d;" onclick="deleteAll('bbm')"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
+        </div>
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari lambung, jalur..." oninput="filterTable('tbl-bbm',this.value)"></div>
           <div class="table-actions">
@@ -273,6 +293,7 @@
         <div class="table-wrap">
           <table id="tbl-bbm">
             <thead><tr>
+              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bbm',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal (Rp)</th><th>SPBU</th><th>Halte Terakhir</th><th>Jam Halte</th><th>Ket.</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-bbm"></tbody>
@@ -288,6 +309,12 @@
         <div><h2>Input Operasional</h2><p>Catat data operasional harian armada</p></div>
       </div>
       <div class="card">
+        <div class="bulk-bar" id="bulk-bar-ops">
+          <span class="sel-count" id="bulk-count-ops">0 dipilih</span>
+          <button class="btn-bulk-cancel" onclick="clearSelect('ops')">Batal</button>
+          <button class="btn-bulk-del" onclick="bulkDelete('ops')"><i class="fas fa-trash"></i> Hapus Terpilih</button>
+          <button class="btn-bulk-del" style="background:#7b2d2d;" onclick="deleteAll('ops')"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
+        </div>
         <div class="table-toolbar">
           <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari lambung, jalur..." oninput="filterTable('tbl-ops',this.value)"></div>
           <div class="table-actions">
@@ -300,6 +327,7 @@
         <div class="table-wrap" style="font-size:12px;">
           <table id="tbl-ops">
             <thead><tr>
+              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('ops',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Tgl</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Jam Mulai</th><th>Jam Akhir</th><th>Km Awal Pool</th><th>Km Akhir Pool</th><th>Km Awal Halte</th><th>Km Akhir Halte</th><th>BBM (Rp)</th><th>RIT</th><th>Km Tempuh</th><th>Ratio</th><th>Ket.</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-ops"></tbody>
