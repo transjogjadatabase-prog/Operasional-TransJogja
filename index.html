@@ -564,4 +564,38 @@
 <!-- Toast -->
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toast-msg"></span></div>
 
+
+<!-- Modal Akun -->
+<div class="modal-overlay" id="modal-akun">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-akun-title">Tambah Akun</h3>
+      <button class="close-btn" onclick="closeModal('modal-akun')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Nama Lengkap *</label><input type="text" id="akun-nama" placeholder="Nama lengkap"></div>
+        <div class="form-group"><label>Username *</label><input type="text" id="akun-username" placeholder="username (huruf kecil)"></div>
+        <div class="form-group"><label>Password *</label><input type="password" id="akun-password" placeholder="Min. 6 karakter"></div>
+        <div class="form-group">
+          <label>Role *</label>
+          <select id="akun-role" onchange="renderPermGrid()">
+            <option value="admin">Admin</option>
+            <option value="staf">Staf</option>
+            <option value="guest">Guest</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <div class="perm-section-title">Izin Menu &amp; Aksi</div>
+          <div class="perm-grid" id="perm-grid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-akun')">Batal</button>
+      <button class="btn btn-primary" onclick="saveAkun()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
