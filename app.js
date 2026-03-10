@@ -432,7 +432,7 @@ function renderBus() {
   if (!DB.bus.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.bus.map(function(r, i) {
     return '<tr>'
-      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck('bus',this,''+r.id+'')"></td>'
+      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bus&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td><td>'+r.nopol+'</td>'
       +'<td><span class="badge-status badge-aktif">'+r.jalur+'</span></td>'
@@ -481,6 +481,7 @@ function renderSpbu() {
   if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.spbu.map(function(r, i) {
     return '<tr>'
+      + '<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;spbu&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       + '<td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td>'
       + '<td><strong>' + r.nama + '</strong></td>'
       + '<td><span style="font-family:monospace;font-size:12px;background:var(--green-pale);color:var(--green-dark);padding:3px 10px;border-radius:6px;font-weight:700;">' + (r.kode||'—') + '</span></td>'
@@ -549,7 +550,7 @@ function renderBBM() {
   if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
   tbody.innerHTML=DB.bbm.map(function(r,i){
     return '<tr>'
-      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck('bbm',this,''+r.id+'')"></td>'
+      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bbm&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td>'
       +'<td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td>'
@@ -687,7 +688,7 @@ function renderOps() {
   tbody.innerHTML=DB.ops.map(function(r,i){
     function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
     return '<tr>'
-      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck('ops',this,''+r.id+'')"></td>'
+      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;ops&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td>'
