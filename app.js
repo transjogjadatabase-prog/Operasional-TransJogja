@@ -329,11 +329,30 @@ function setLoading(tbodyId, colspan) {
 }
 
 // ============================================================
+// FETCH ALL — Supabase default limit 1000, ini ambil semua halaman
+// ============================================================
+async function fetchAll(table, orderCol, orderAsc) {
+  var allData = [];
+  var pageSize = 1000;
+  var from = 0;
+  while (true) {
+    var r = await db.from(table).select('*')
+      .order(orderCol, { ascending: orderAsc })
+      .range(from, from + pageSize - 1);
+    if (r.error) return { data: null, error: r.error };
+    allData = allData.concat(r.data);
+    if (r.data.length < pageSize) break; // sudah halaman terakhir
+    from += pageSize;
+  }
+  return { data: allData, error: null };
+}
+
+// ============================================================
 // BUS
 // ============================================================
 async function loadBus() {
   setLoading('tbody-bus', 10);
-  var r = await db.from('bus').select('*').order('created_at', { ascending: false });
+  var r = await fetchAll('bus', 'created_at', false);
   if (r.error) { toast('Gagal memuat data bus: ' + r.error.message, true); return; }
   DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
   renderBus(); populateLambDropdowns();
@@ -479,7 +498,7 @@ async function delBus(i) {
 // ============================================================
 async function loadSpbu() {
   setLoading('tbody-spbu', 6);
-  var r = await db.from('spbu').select('*').order('created_at', { ascending: false });
+  var r = await fetchAll('spbu', 'created_at', false);
   if (r.error) return toast('Gagal memuat SPBU: ' + r.error.message, true);
   DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode||'', nama:d.nama, alamat:d.alamat||'', hp:d.hp||'', aktif:d.aktif }; });
   renderSpbu(); populateSpbuDropdowns();
@@ -548,7 +567,7 @@ function autofillBBM() {
 }
 async function loadBBM() {
   setLoading('tbody-bbm', 12);
-  var r = await db.from('bbm').select('*').order('tgl', { ascending: false });
+  var r = await fetchAll('bbm', 'tgl', false);
   if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
   DB.bbm = r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:d.nominal,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};});
   renderBBM();
@@ -677,7 +696,7 @@ function calcOps() {
 }
 async function loadOps() {
   setLoading('tbody-ops',17);
-  var r=await db.from('operasional').select('*').order('tgl',{ascending:false});
+  var r=await fetchAll('operasional','tgl',false);
   if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
   DB.ops=r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
   renderOps();
