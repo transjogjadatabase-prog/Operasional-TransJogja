@@ -385,3 +385,20 @@ textarea { resize:vertical; min-height:80px; }
   transition:background 0.2s;
 }
 .sidebar-footer .logout-btn:hover { background:rgba(255,255,255,0.16); color:#fff; }
+
+
+/* ========== MULTI DELETE ========== */
+.cb-select { accent-color:var(--green-main); width:15px; height:15px; cursor:pointer; }
+.bulk-bar {
+  display:none; align-items:center; gap:10px;
+  background:var(--green-pale); border:1.5px solid var(--green-main);
+  border-radius:10px; padding:8px 14px; margin-bottom:10px;
+  font-size:13px; font-weight:600; color:var(--green-dark);
+}
+.bulk-bar.show { display:flex; }
+.bulk-bar .sel-count { flex:1; }
+.btn-bulk-del { background:#e53e3e; color:#fff; border:none; border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.btn-bulk-del:hover { background:#c53030; }
+.btn-bulk-cancel { background:transparent; color:var(--gray-600); border:1.5px solid var(--gray-200); border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; }
+thead .cb-th { width:36px; text-align:center; }
+tr.selected-row { background:#f0faf2 !important; }
