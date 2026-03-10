@@ -5,6 +5,13 @@ const SUPABASE_URL      = 'https://rzmeitgcbcpctisxsxpq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6bWVpdGdjYmNwY3Rpc3hzeHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzU0NTIsImV4cCI6MjA4ODYxMTQ1Mn0.NJivuuKmq48in32Ruk5hcf5F3LbNa2jL8yjD8GVClj4';
 var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ============================================================
+// SUPABASE CONFIG — ganti URL dan KEY dengan milik Anda
+// ============================================================
+const SUPABASE_URL      = 'https://XXXXXXXXXXXX.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ============ STATE ============
 let DB = { bus: [], spbu: [], bbm: [], ops: [], akun: [] };
 let editIdx = { bus: -1, spbu: -1, bbm: -1, ops: -1, akun: -1 };
@@ -556,7 +563,8 @@ async function loadBBM() {
 async function saveBBM() {
   var tgl=document.getElementById('bbm-tgl').value, lamb=document.getElementById('bbm-lambung').value, nominal=document.getElementById('bbm-nominal').value;
   if (!tgl||!lamb||!nominal) return toast('Tanggal, Lambung, dan Nominal wajib diisi!',true);
-  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:document.getElementById('bbm-jam-halte').value||null,ket:document.getElementById('bbm-ket').value};
+  var _jamHalteVal=document.getElementById('bbm-jam-halte')?document.getElementById('bbm-jam-halte').value||null:null;
+  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:_jamHalteVal,ket:document.getElementById('bbm-ket').value};
   var res;
   if (editIdx.bbm>=0){res=await db.from('bbm').update(row).eq('id',DB.bbm[editIdx.bbm].id);if(!res.error)toast('Data BBM diperbarui!');}
   else{res=await db.from('bbm').insert(row);if(!res.error)toast('Data BBM disimpan!');}
@@ -959,7 +967,8 @@ document.querySelectorAll('.modal-overlay').forEach(function(m) {
 });
 
 // Render perm grid saat modal akun dibuka
-document.getElementById('modal-akun').addEventListener('transitionend', function(){
+var _maEl = document.getElementById('modal-akun');
+if (_maEl) _maEl.addEventListener('transitionend', function(){
   if(this.classList.contains('open') && editIdx.akun < 0) renderPermGrid();
 });
 
