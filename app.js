@@ -114,7 +114,7 @@ function setLoading(tbodyId, colspan) {
 async function loadBus() {
   setLoading('tbody-bus', 10);
   var r = await db.from('bus').select('*').order('created_at', { ascending: false });
-  if (r.error) return toast('Gagal memuat data bus: ' + r.error.message, true);
+  if (r.error) { toast('Gagal memuat data bus: ' + r.error.message, true); return; }
   DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
   renderBus(); populateLambDropdowns();
 }
@@ -167,7 +167,7 @@ async function loadSpbu() {
   setLoading('tbody-spbu', 6);
   var r = await db.from('spbu').select('*').order('created_at', { ascending: false });
   if (r.error) return toast('Gagal memuat SPBU: ' + r.error.message, true);
-  DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode, nama:d.nama, alamat:d.alamat, hp:d.hp, aktif:d.aktif }; });
+  DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode||'', nama:d.nama, alamat:d.alamat||'', hp:d.hp||'', aktif:d.aktif }; });
   renderSpbu(); populateSpbuDropdowns();
 }
 async function saveSpbu() {
@@ -531,7 +531,7 @@ document.querySelectorAll('.modal-overlay').forEach(function(m) {
   m.addEventListener('click', function(e) { if (e.target === m) closeModal(m.id); });
 });
 
-// load data awal
-loadBus();
-loadSpbu();
-updateDashboard();
+// load data awal — independent, error satu tidak hentikan yang lain
+loadBus().catch(function(e){ console.error('loadBus error:', e); });
+loadSpbu().catch(function(e){ console.error('loadSpbu error:', e); });
+updateDashboard().catch(function(e){ console.error('dashboard error:', e); });
