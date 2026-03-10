@@ -390,6 +390,24 @@ function updateBulkBar(type) {
   if (hdr) hdr.indeterminate = checks.length > 0 && checks.length < all.length;
   if (hdr) hdr.checked = all.length > 0 && checks.length === all.length;
 }
+function toggleDeleteMode(type) {
+  var tbl  = document.getElementById('tbl-' + type);
+  var btn  = document.getElementById('btn-delmode-' + type);
+  var bar  = document.getElementById('bulk-bar-' + type);
+  var isOn = tbl.classList.toggle('delete-mode');
+  if (isOn) {
+    btn.innerHTML = '<i class="fas fa-times"></i> Batal Hapus';
+    btn.style.background = '#e53e3e';
+    btn.style.color = '#fff';
+  } else {
+    btn.innerHTML = '<i class="fas fa-trash"></i> Hapus Data';
+    btn.style.background = '';
+    btn.style.color = '#e53e3e';
+    clearSelect(type);
+    bar.classList.remove('show');
+  }
+}
+
 function clearSelect(type) {
   document.querySelectorAll('#tbody-' + type + ' .cb-row').forEach(function(c){ c.checked=false; c.closest('tr').classList.remove('selected-row'); });
   var hdr = document.querySelector('#tbl-' + type + ' thead .cb-select');
