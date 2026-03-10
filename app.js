@@ -177,12 +177,11 @@ function applyActionPerms() {
 }
 
 function doLogout() {
-  sessionStorage.removeItem('tjUser');
+  sessionStorage.clear();
+  localStorage.clear();
   currentUser = null;
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('login-username').value = '';
-  document.getElementById('login-password').value = '';
-  document.getElementById('login-error').textContent = '';
+  // Reload halaman agar semua state bersih
+  window.location.reload();
 }
 
 // ============================================================
