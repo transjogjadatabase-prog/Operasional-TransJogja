@@ -218,7 +218,7 @@ body {
 .search-box i { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--gray-400); font-size:13px; }
 .table-actions { display:flex; gap:8px; flex-wrap:wrap; }
 
-.table-wrap { overflow-x:auto; overflow-y:auto; max-height:520px; border-radius:var(--radius-sm); border:1px solid var(--gray-200); }
+.table-wrap { overflow-x:auto; overflow-y:auto; max-height:520px; border-radius:var(--radius-sm); border:1px solid var(--gray-200); border-collapse:separate; }
 .table-wrap thead th { position:sticky; top:0; z-index:2; background:var(--green-dark); color:white; }
 table { width:100%; border-collapse:collapse; font-size:13px; }
 thead { background:var(--green-dark); }
@@ -411,29 +411,31 @@ thead .cb-th { width:36px; text-align:center; }
 tr.selected-row { background:#f0faf2 !important; }
 
 /* Freeze kolom pertama */
-.table-freeze { position: relative; }
-.table-freeze .freeze-col {
-  position: sticky;
-  left: 0;
-  z-index: 3;
+.table-freeze table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.freeze-col {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3 !important;
   background: #fff;
-  box-shadow: 2px 0 6px rgba(0,0,0,0.08);
-  min-width: 48px;
+  box-shadow: 3px 0 5px -1px rgba(0,0,0,0.10);
 }
-.table-freeze tbody tr:hover .freeze-col {
-  background: #f0faf2;
+thead .freeze-col {
+  background: var(--green-dark) !important;
+  color: #fff !important;
+  z-index: 5 !important;
 }
-.table-freeze tbody tr:nth-child(even) .freeze-col {
+tbody tr:hover .freeze-col {
+  background: #f0faf2 !important;
+}
+tbody tr:nth-child(even) .freeze-col {
   background: #f9fafb;
 }
-.table-freeze tbody tr:nth-child(even):hover .freeze-col {
-  background: #f0faf2;
+tbody tr:nth-child(even):hover .freeze-col {
+  background: #f0faf2 !important;
 }
-.table-freeze thead .freeze-col {
-  background: var(--green-dark);
-  color: #fff;
-  z-index: 4;
-}
-.table-freeze .total-row .freeze-col {
-  background: var(--green-pale);
+.total-row .freeze-col {
+  background: var(--green-pale) !important;
 }
