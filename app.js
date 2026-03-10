@@ -272,9 +272,56 @@ async function delBBM(i) {
 // OPERASIONAL
 // ============================================================
 function autofillOps() {
-  var bus=DB.bus.find(function(b){return b.lambung===document.getElementById('ops-lambung').value;});
-  document.getElementById('ops-jalur').value=bus?bus.jalur:'';
-  document.getElementById('ops-nopol').value=bus?bus.nopol:'';
+  var lambung = document.getElementById('ops-lambung').value;
+  var tgl     = document.getElementById('ops-tgl').value;
+
+  // 1. Autofill jalur & nopol dari data bus
+  var bus = DB.bus.find(function(b){ return b.lambung === lambung; });
+  document.getElementById('ops-jalur').value = bus ? bus.jalur : '';
+  document.getElementById('ops-nopol').value = bus ? bus.nopol : '';
+
+  // 2. Autofill BBM total dari data BBM hari itu + lambung sama
+  if (lambung && tgl) {
+    fillBBMFromData(tgl, lambung);
+  }
+}
+
+function fillBBMFromData(tgl, lambung) {
+  // Cari semua record BBM dengan tanggal & lambung yang sama
+  var bbmRecords = DB.bbm.filter(function(r) {
+    return r.tgl === tgl && r.lambung === lambung;
+  });
+
+  if (bbmRecords.length > 0) {
+    // Total nominal BBM pada hari itu
+    var totalBBM = bbmRecords.reduce(function(sum, r) {
+      return sum + (parseFloat(r.nominal) || 0);
+    }, 0);
+
+    // Waktu pengisian pertama & terakhir
+    var waktuList = bbmRecords
+      .map(function(r){ return r.waktu; })
+      .filter(Boolean)
+      .sort();
+
+    document.getElementById('ops-bbm').value = totalBBM;
+
+    // Info notif berapa pengisian ditemukan
+    var info = document.getElementById('ops-bbm-info');
+    if (info) {
+      info.textContent = '✓ ' + bbmRecords.length + ' pengisian BBM ditemukan — Total: Rp ' + totalBBM.toLocaleString();
+      info.style.display = 'block';
+    }
+
+    // Recalculate ratio
+    calcOps();
+  } else {
+    var info = document.getElementById('ops-bbm-info');
+    if (info) {
+      info.textContent = '';
+      info.style.display = 'none';
+    }
+  }
 }
 function calcOps() {
   var jm=document.getElementById('ops-jam-mulai').value,ja=document.getElementById('ops-jam-akhir').value;
