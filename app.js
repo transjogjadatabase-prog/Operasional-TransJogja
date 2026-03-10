@@ -599,7 +599,28 @@ async function saveOps() {
 function renderOps() {
   var tbody=document.getElementById('tbody-ops');
   if(!DB.ops.length){tbody.innerHTML='<tr><td colspan="17"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
-  tbody.innerHTML=DB.ops.map(function(r,i){return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td><td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.jamMulai||'-')+'</td><td>'+(r.jamAkhir||'-')+'</td><td>'+(r.kmAwalPool||'-')+'</td><td>'+(r.kmAkhirPool||'-')+'</td><td>'+(r.kmAwalHalte||'-')+'</td><td>'+(r.kmAkhirHalte||'-')+'</td><td>Rp '+(r.bbm?Number(r.bbm).toLocaleString():'-')+'</td><td>'+(r.rit||'-')+'</td><td><strong>'+(r.kmTempuh||'-')+'</strong></td><td>'+(r.ratio||'-')+'</td><td>'+(r.ket||'-')+'</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOps('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOps('+i+')"><i class="fas fa-trash"></i></button></div></td></tr>';}).join('');
+  tbody.innerHTML=DB.ops.map(function(r,i){
+    function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
+    return '<tr>'
+      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td>'+r.tgl+'</td>'
+      +'<td><strong>'+r.lambung+'</strong></td>'
+      +'<td>'+r.jalur+'</td>'
+      +'<td>'+r.nopol+'</td>'
+      +'<td>'+(r.jamMulai||'-')+'</td>'
+      +'<td>'+(r.jamAkhir||'-')+'</td>'
+      +'<td>'+fmtKm(r.kmAwalPool)+'</td>'
+      +'<td>'+fmtKm(r.kmAkhirPool)+'</td>'
+      +'<td>'+fmtKm(r.kmAwalHalte)+'</td>'
+      +'<td>'+fmtKm(r.kmAkhirHalte)+'</td>'
+      +'<td>Rp '+(r.bbm?Number(r.bbm).toLocaleString('id-ID'):'-')+'</td>'
+      +'<td>'+(r.rit||'-')+'</td>'
+      +'<td><strong>'+(r.kmTempuh ? Number(r.kmTempuh).toLocaleString('id-ID')+' Km' : '-')+'</strong></td>'
+      +'<td>'+(r.ratio||'-')+'</td>'
+      +'<td>'+(r.ket||'-')+'</td>'
+      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOps('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOps('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'</tr>';
+  }).join('');
 }
 function editOps(i) {
   editIdx.ops=i;var r=DB.ops[i];populateLambDropdowns();
