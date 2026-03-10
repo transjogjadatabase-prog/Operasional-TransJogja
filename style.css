@@ -93,6 +93,9 @@ body {
   font-family: var(--font-body); font-weight: 400;
 }
 
+.sidebar-nav { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
 .sidebar-section { padding: 18px 12px 6px; }
 .sidebar-section-label {
   font-size: 9.5px; letter-spacing: 1.8px; text-transform:uppercase;
