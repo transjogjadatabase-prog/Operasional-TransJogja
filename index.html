@@ -13,6 +13,31 @@
 </head>
 <body>
 
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAB2AHUDASIAAhEBAxEB/8QAHQABAAEFAQEBAAAAAAAAAAAAAAYEBQcICQMCAf/EAEoQAAEDAwEDBwUKCgsBAAAAAAEAAgMEBREGEiExBwgTQVFhgRQicZHRFRYyNVNyc5OxwSNCVFWUobLh4vAzN1JiZXWCkqOzwvH/xAAcAQABBQEBAQAAAAAAAAAAAAAAAQQFBgcDAgj/xAA4EQABAwICBAsGBwEAAAAAAAABAAIDBBEFIQYSMVEHExQiQXGBkbHR8BUyUmGhwSMzQkRygsLh/9oADAMBAAIRAxEAPwDTJEV20lpu9arvkVlsFC+trpQ5zY2ua0BoGSS5xAaO8nsHEheXOaxpc42ASgEmwVpRbIUPNUuTqRpr9Z0UNTjzmU9E6WMHJ4Pc5pO7BGWjjjqUL5R+QDWmkaGa6Upp75bocukfSBwmjYOLnRkZx27JdgAk4CiYdIMNml4pkw1u76nJOXUNQ1usWGyxGiL2hpamZu1DTyyNzjLGEjPgpjYmq8UVQaGtHGjqPqj7F5TRSwuDZonxkjIDmkFJcIXwiIlQiIiEIiIhCIiIQi3k5s2jaTS3JhbqwRRm43mFldVTADJa8bUTM4zhrSNx/GLu1aNroZyR3Kmu3JhpqvpXh8b7ZAx2DnD2NDHt79lzXDwVI07mljoWNZ7rnWPds9blM4IxrpiTtAyUpREWSq1LSbnT6IpNIcoTam1Uzae2XeE1MUbG7LIpQ7EjGjqHwXY4DbwNwCyZzIb5NPZdQadldmOlniq4MnJHSAteMdn4Np/1HxoefSBtaOOBk+XDP1CsnMie8a9vcYcdh1r2iO0iVmPtK1aeV1bovxkpuQNv8XW8AqxG0Q4nqt2X8QttkRFlWsd6s9go3qDQejNQNkF40vaap8gOZXUzRJv37pGgOHgVh/XvNisdaySp0bdJbVUHJbSVZMsB7Gh3w2DjvO3lbCIpSixyvojeGQ23E3HcU1mooJhz2j181zp1vo7UejLsbbqK2S0cpz0bz50cwH4zHjc4bxw3jO/BVgXR7Vum7Jquyy2i/wBviraSTfsvHnMdjG013FrgOBC0p5ceSq5cnN5D4zJWWKqefI6wt3tO89FJjcHgeDhvHWBqGj+lMWKfgyDVk3dB6vJVqvwx1Nz25t8FjdERWxRaIiIQizFzeuWOTQEr7Je2TVOn6iQv/BgGSlkPFzQeLTuy3xG/IOHV70tHU1QeaaF8uwAXBoyfUmlbQw10JgnF2n1cLpFO6B4kabELoPY+UHQ96gjmtmrLPMJB5rDVNjkHpY4h7eHWFdfd+xfnu2/pTPaubz2PYcPa5p7CML5VKk4P6cnmTEDqB8lNNx19s2A9q2S57lfQV3vRNFW01TseW7XQytfs56DGcHd1+pWLmYVtFQ69vD62sp6ZrrWQ0zSBgJ6WPcMrBSKxswNjML9na+ViL23m+xRxrSanlFuzssukXvgsH57tn6Uz2qopLpbKx+xSXGjqHdkUzXH1Armqv0Eg5G4qsng/itlOe7/qkvbzvg+q6aItE+Tflp1toypij90ZLvbAQH0NdIZGho6mPPnR+Bx2grcjk61pZNdabjvdjmc6MnYmikAEkEmBljhwzvHDcQQQqljWjVVhXPdzmfEPvu9ZqUosRiqchk7cpIrTq7T9r1VpyssF4g6Wjq4wy" alt="Logo" style="width:52px;height:52px;object-fit:contain;border-radius:12px;">
+      <div class="login-logo-text">
+        <div class="title">TransJogja</div>
+        <div class="sub">Sistem Operasional</div>
+      </div>
+    </div>
+    <h2>Masuk ke Sistem</h2>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="Masukkan username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Masukkan password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Masuk</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+
 <!-- SIDEBAR OVERLAY -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
@@ -68,14 +93,22 @@
     </button>
   </div>
 
+  <div class="sidebar-section" id="sidebar-akun" style="display:none">
+    <div class="sidebar-section-label">Administrasi</div>
+    <button data-page="kelola-akun" class="nav-item" onclick="goPage('kelola-akun')">
+      <span class="icon"><i class="fas fa-users-cog"></i></span> Kelola Akun
+    </button>
+  </div>
+
   <div class="sidebar-footer">
     <div class="user-card">
-      <div class="user-avatar">A</div>
+      <div class="user-avatar" id="sidebar-avatar">A</div>
       <div class="user-info">
-        <div class="name">Admin</div>
-        <div class="role">Operator TransJogja</div>
+        <div class="name" id="sidebar-username">Admin</div>
+        <div class="role" id="sidebar-role">Operator TransJogja</div>
       </div>
     </div>
+    <button class="logout-btn" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Keluar</button>
   </div>
 </aside>
 
@@ -473,6 +506,32 @@
     </div>
   </div>
 </div>
+
+
+    <!-- ===== KELOLA AKUN ===== -->
+    <div class="page" id="page-kelola-akun">
+      <div class="section-header">
+        <div class="section-icon">👥</div>
+        <div><h2>Kelola Akun</h2><p>Manajemen pengguna sistem</p></div>
+      </div>
+      <div class="card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari nama, username..." oninput="filterTable('tbl-akun',this.value)"></div>
+          <div class="table-actions">
+            <button class="btn btn-primary btn-sm" id="btn-tambah-akun" onclick="openModal('modal-akun')"><i class="fas fa-user-plus"></i> Tambah Akun</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="tbl-akun">
+            <thead><tr>
+              <th style="width:48px;text-align:center;">No.</th>
+              <th>Nama</th><th>Username</th><th>Role</th><th>Akses Menu</th><th>Aksi</th>
+            </tr></thead>
+            <tbody id="tbody-akun"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
 <!-- Toast -->
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toast-msg"></span></div>
