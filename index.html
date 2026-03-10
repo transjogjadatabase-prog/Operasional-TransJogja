@@ -226,10 +226,10 @@
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-bus')"><i class="fas fa-plus"></i> Tambah Bus</button>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-freeze">
           <table id="tbl-bus">
             <thead><tr>
-              <th style="width:48px;text-align:center;">No.</th><th>Lambung</th><th>No Polisi</th><th>Jalur</th><th>Tipe Bus</th><th>Karoseri</th><th>Warna</th><th>Keterangan</th><th>Foto</th><th>Aksi</th><th class="cb-th-hide" id="cb-th-bus" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bus',this)" title="Pilih Semua"></th>
+              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Lambung</th><th>No Polisi</th><th>Jalur</th><th>Tipe Bus</th><th>Karoseri</th><th>Warna</th><th>Keterangan</th><th>Foto</th><th>Aksi</th><th class="cb-th-hide" id="cb-th-bus" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bus',this)" title="Pilih Semua"></th>
             </tr></thead>
             <tbody id="tbody-bus"></tbody>
           </table>
@@ -260,10 +260,10 @@
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-spbu')"><i class="fas fa-plus"></i> Tambah SPBU</button>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-freeze">
           <table id="tbl-spbu">
             <thead><tr>
-              <th style="width:48px;text-align:center;">No.</th><th>Nama SPBU</th><th>ID SPBU</th><th>Alamat</th><th>No HP</th><th>Status</th><th>Aksi</th><th class="cb-th-hide" id="cb-th-spbu" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('spbu',this)" title="Pilih Semua"></th>
+              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Nama SPBU</th><th>ID SPBU</th><th>Alamat</th><th>No HP</th><th>Status</th><th>Aksi</th><th class="cb-th-hide" id="cb-th-spbu" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('spbu',this)" title="Pilih Semua"></th>
             </tr></thead>
             <tbody id="tbody-spbu"></tbody>
           </table>
@@ -294,10 +294,10 @@
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-bbm')"><i class="fas fa-plus"></i> Tambah</button>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-freeze">
           <table id="tbl-bbm">
             <thead><tr>
-              <th style="width:48px;text-align:center;">No.</th><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal (Rp)</th><th>SPBU</th><th>Halte Terakhir</th><th>Jam Halte</th><th>Ket.</th><th>Aksi</th>
+              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal (Rp)</th><th>SPBU</th><th>Halte Terakhir</th><th>Jam Halte</th><th>Ket.</th><th>Aksi</th>
             <th class="cb-th-hide" id="cb-th-bbm" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bbm',this)" title="Pilih Semua"></th></tr></thead>
             <tbody id="tbody-bbm"></tbody>
           </table>
@@ -331,7 +331,7 @@
         <div class="table-wrap" style="font-size:12px;">
           <table id="tbl-ops">
             <thead><tr>
-              <th style="width:48px;text-align:center;">No.</th><th>Tgl</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Jam Mulai</th><th>Jam Akhir</th><th>Km Awal Pool</th><th>Km Akhir Pool</th><th>Km Awal Halte</th><th>Km Akhir Halte</th><th>BBM (Rp)</th><th>RIT</th><th>Km Tempuh</th><th>Ratio</th><th>Ket.</th><th>Aksi</th>
+              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Tgl</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Jam Mulai</th><th>Jam Akhir</th><th>Km Awal Pool</th><th>Km Akhir Pool</th><th>Km Awal Halte</th><th>Km Akhir Halte</th><th>BBM (Rp)</th><th>RIT</th><th>Km Tempuh</th><th>Ratio</th><th>Ket.</th><th>Aksi</th>
             <th class="cb-th-hide" id="cb-th-ops" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('ops',this)" title="Pilih Semua"></th></tr></thead>
             <tbody id="tbody-ops"></tbody>
           </table>
@@ -419,10 +419,10 @@
             <button class="btn btn-primary btn-sm" id="btn-tambah-akun" onclick="openModal('modal-akun')"><i class="fas fa-user-plus"></i> Tambah Akun</button>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap table-freeze">
           <table id="tbl-akun">
             <thead><tr>
-              <th style="width:48px;text-align:center;">No.</th>
+              <th class="freeze-col" style="width:48px;text-align:center;">No.</th>
               <th>Nama</th><th>Username</th><th>Role</th><th>Akses Menu</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-akun"></tbody>
