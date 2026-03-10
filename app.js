@@ -450,13 +450,13 @@ function renderBus() {
   if (!DB.bus.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.bus.map(function(r, i) {
     return '<tr>'
-      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bus&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td><td>'+r.nopol+'</td>'
       +'<td><span class="badge-status badge-aktif">'+r.jalur+'</span></td>'
       +'<td>'+(r.tipe||'-')+'</td><td>'+(r.karoseri||'-')+'</td><td>'+(r.warna||'-')+'</td><td>'+(r.ket||'-')+'</td>'
       +'<td>'+(r.foto?'<img src="'+r.foto+'" style="width:44px;height:32px;object-fit:cover;border-radius:6px;">':'—')+'</td>'
       +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBus('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBus('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bus&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
   }).join('');
 }
@@ -499,7 +499,6 @@ function renderSpbu() {
   if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.spbu.map(function(r, i) {
     return '<tr>'
-      + '<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;spbu&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       + '<td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td>'
       + '<td><strong>' + r.nama + '</strong></td>'
       + '<td><span style="font-family:monospace;font-size:12px;background:var(--green-pale);color:var(--green-dark);padding:3px 10px;border-radius:6px;font-weight:700;">' + (r.kode||'—') + '</span></td>'
@@ -507,6 +506,7 @@ function renderSpbu() {
       + '<td>' + (r.hp||'-') + '</td>'
       + '<td><span class="badge-status ' + (r.aktif?'badge-aktif':'badge-nonaktif') + '">' + (r.aktif?'Aktif':'Tidak Aktif') + '</span></td>'
       + '<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editSpbu(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delSpbu(' + i + ')"><i class="fas fa-trash"></i></button></div></td>'
+      + '<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;spbu&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       + '</tr>';
   }).join('');
 }
@@ -568,12 +568,12 @@ function renderBBM() {
   if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
   tbody.innerHTML=DB.bbm.map(function(r,i){
     return '<tr>'
-      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bbm&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td>'
       +'<td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td>'
       +'<td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td>'
       +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBM('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBM('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bbm&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
   }).join('');
 }
@@ -706,7 +706,6 @@ function renderOps() {
   tbody.innerHTML=DB.ops.map(function(r,i){
     function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
     return '<tr>'
-      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;ops&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td>'
@@ -724,6 +723,7 @@ function renderOps() {
       +'<td>'+(r.ratio||'-')+'</td>'
       +'<td>'+(r.ket||'-')+'</td>'
       +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOps('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOps('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;ops&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
   }).join('');
 }
