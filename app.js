@@ -1,8 +1,8 @@
 // ============================================================
 // SUPABASE CONFIG — ganti URL dan KEY dengan milik Anda
 // ============================================================
-const SUPABASE_URL      = 'https://rzmeitgcbcpctisxsxpq.supabase.co';   // ← ganti
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6bWVpdGdjYmNwY3Rpc3hzeHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzU0NTIsImV4cCI6MjA4ODYxMTQ1Mn0.NJivuuKmq48in32Ruk5hcf5F3LbNa2jL8yjD8GVClj4'; // ← ganti
+const SUPABASE_URL      = 'https://XXXXXXXXXXXX.supabase.co';   // ← ganti
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ← ganti
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================================
@@ -62,14 +62,10 @@ function applySidebarState() {
   const main    = document.querySelector('.main');
   const icon    = document.getElementById('sidebar-icon');
   if (!sidebar) return;
-
   if (sidebarOpen) {
     sidebar.classList.add('open');
     main.classList.add('sidebar-open');
-    // Only show overlay on mobile
-    if (window.innerWidth <= 900) {
-      overlay.classList.add('show');
-    }
+    if (window.innerWidth <= 900) overlay.classList.add('show');
     if (icon) icon.className = 'fas fa-times';
   } else {
     sidebar.classList.remove('open');
@@ -80,24 +76,9 @@ function applySidebarState() {
 }
 
 window.addEventListener('resize', () => {
-  if (window.innerWidth > 900) {
-    // Desktop: always show sidebar, no overlay
-    if (!sidebarOpen) { sidebarOpen = true; applySidebarState(); }
-    document.getElementById('sidebar-overlay').classList.remove('show');
-  } else {
-    // Mobile: hide sidebar
-    if (sidebarOpen) { sidebarOpen = false; applySidebarState(); }
-  }
-});
-
-window.addEventListener('resize', () => {
-  if (window.innerWidth > 900 && !sidebarOpen) {
-    sidebarOpen = true;
-    applySidebarState();
-  } else if (window.innerWidth <= 900 && sidebarOpen) {
-    sidebarOpen = false;
-    applySidebarState();
-  }
+  const desktop = window.innerWidth > 900;
+  if (desktop && !sidebarOpen) { sidebarOpen = true; applySidebarState(); }
+  if (!desktop && sidebarOpen) { sidebarOpen = false; applySidebarState(); }
 });
 
 // ============ MODALS ============
@@ -610,26 +591,23 @@ async function refreshData(){
 }
 
 // ============================================================
-// INIT — runs after DOM is ready (type="module" defers automatically)
+// INIT — tunggu DOM siap
 // ============================================================
-(async () => {
-  // Setup date
+document.addEventListener('DOMContentLoaded', function() {
+  // Date
   setDateNow();
 
-  // Setup modal overlay click-outside-to-close
-  document.querySelectorAll('.modal-overlay').forEach(m => {
-    m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+  // Modal close on backdrop click
+  document.querySelectorAll('.modal-overlay').forEach(function(m) {
+    m.addEventListener('click', function(e) { if (e.target === m) closeModal(m.id); });
   });
 
-  // Sidebar: open on desktop, closed on mobile
+  // Sidebar state sesuai ukuran layar
   sidebarOpen = window.innerWidth > 900;
   applySidebarState();
-  // On desktop, no overlay needed
-  if (window.innerWidth > 900) {
-    document.getElementById('sidebar-overlay').classList.remove('show');
-  }
 
-  // Load data
-  await Promise.all([loadBus(), loadSpbu()]);
-  await updateDashboard();
-})();
+  // Load data dashboard
+  Promise.all([loadBus(), loadSpbu()]).then(function() {
+    updateDashboard();
+  });
+});
