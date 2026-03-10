@@ -409,3 +409,31 @@ textarea { resize:vertical; min-height:80px; }
 .btn-bulk-cancel { background:transparent; color:var(--gray-600); border:1.5px solid var(--gray-200); border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; }
 thead .cb-th { width:36px; text-align:center; }
 tr.selected-row { background:#f0faf2 !important; }
+
+/* Freeze kolom pertama */
+.table-freeze { position: relative; }
+.table-freeze .freeze-col {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #fff;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.08);
+  min-width: 48px;
+}
+.table-freeze tbody tr:hover .freeze-col {
+  background: #f0faf2;
+}
+.table-freeze tbody tr:nth-child(even) .freeze-col {
+  background: #f9fafb;
+}
+.table-freeze tbody tr:nth-child(even):hover .freeze-col {
+  background: #f0faf2;
+}
+.table-freeze thead .freeze-col {
+  background: var(--green-dark);
+  color: #fff;
+  z-index: 4;
+}
+.table-freeze .total-row .freeze-col {
+  background: var(--green-pale);
+}
