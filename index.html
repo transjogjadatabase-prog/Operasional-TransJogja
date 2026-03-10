@@ -407,6 +407,30 @@
       <div id="result-lap-ops"></div>
     </div>
 
+    <div class="page" id="page-kelola-akun">
+      <div class="section-header">
+        <div class="section-icon">👥</div>
+        <div><h2>Kelola Akun</h2><p>Manajemen pengguna sistem</p></div>
+      </div>
+      <div class="card">
+        <div class="table-toolbar">
+          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari nama, username..." oninput="filterTable('tbl-akun',this.value)"></div>
+          <div class="table-actions">
+            <button class="btn btn-primary btn-sm" id="btn-tambah-akun" onclick="openModal('modal-akun')"><i class="fas fa-user-plus"></i> Tambah Akun</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="tbl-akun">
+            <thead><tr>
+              <th style="width:48px;text-align:center;">No.</th>
+              <th>Nama</th><th>Username</th><th>Role</th><th>Akses Menu</th><th>Aksi</th>
+            </tr></thead>
+            <tbody id="tbody-akun"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -541,29 +565,6 @@
 
 
     <!-- ===== KELOLA AKUN ===== -->
-    <div class="page" id="page-kelola-akun">
-      <div class="section-header">
-        <div class="section-icon">👥</div>
-        <div><h2>Kelola Akun</h2><p>Manajemen pengguna sistem</p></div>
-      </div>
-      <div class="card">
-        <div class="table-toolbar">
-          <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari nama, username..." oninput="filterTable('tbl-akun',this.value)"></div>
-          <div class="table-actions">
-            <button class="btn btn-primary btn-sm" id="btn-tambah-akun" onclick="openModal('modal-akun')"><i class="fas fa-user-plus"></i> Tambah Akun</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table id="tbl-akun">
-            <thead><tr>
-              <th style="width:48px;text-align:center;">No.</th>
-              <th>Nama</th><th>Username</th><th>Role</th><th>Akses Menu</th><th>Aksi</th>
-            </tr></thead>
-            <tbody id="tbody-akun"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
 
 <!-- Toast -->
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toast-msg"></span></div>
