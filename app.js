@@ -182,9 +182,18 @@ async function saveSpbu() {
 }
 function renderSpbu() {
   var tbody = document.getElementById('tbody-spbu');
-  if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
+  if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.spbu.map(function(r, i) {
-    return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td><td><strong>' + r.nama + '</strong></td><td>' + (r.alamat||'-') + '</td><td>' + (r.hp||'-') + '</td><td><span class="badge-status ' + (r.aktif?'badge-aktif':'badge-nonaktif') + '">' + (r.aktif?'Aktif':'Tidak Aktif') + '</span></td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editSpbu(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delSpbu(' + i + ')"><i class="fas fa-trash"></i></button></div></td></tr>';
+    var shortId = r.id ? r.id.split('-')[0].toUpperCase() : '-';
+    return '<tr>'
+      + '<td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td>'
+      + '<td><strong>' + r.nama + '</strong></td>'
+      + '<td><span style="font-family:monospace;font-size:11px;background:var(--green-pale);color:var(--green-dark);padding:3px 8px;border-radius:6px;font-weight:600;">' + shortId + '</span></td>'
+      + '<td>' + (r.alamat||'-') + '</td>'
+      + '<td>' + (r.hp||'-') + '</td>'
+      + '<td><span class="badge-status ' + (r.aktif?'badge-aktif':'badge-nonaktif') + '">' + (r.aktif?'Aktif':'Tidak Aktif') + '</span></td>'
+      + '<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editSpbu(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delSpbu(' + i + ')"><i class="fas fa-trash"></i></button></div></td>'
+      + '</tr>';
   }).join('');
 }
 function editSpbu(i) {
