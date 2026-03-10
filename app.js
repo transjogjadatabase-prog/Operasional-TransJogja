@@ -148,7 +148,8 @@ function applyUserSession() {
   document.getElementById('sidebar-role').textContent = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
   document.getElementById('sidebar-avatar').textContent = currentUser.nama.charAt(0).toUpperCase();
   // Tampilkan menu Kelola Akun hanya untuk admin
-  document.getElementById('sidebar-akun').style.display = currentUser.role==='admin' ? '' : 'none';
+  console.log('ROLE:', currentUser.role, '| IS ADMIN:', currentUser.role==='admin');
+  document.getElementById('sidebar-akun').style.display = (currentUser.role||'').trim().toLowerCase()==='admin' ? '' : 'none';
   // Sembunyikan nav item yang tidak punya akses
   document.querySelectorAll('[data-page]').forEach(function(btn){
     var page = btn.getAttribute('data-page');
