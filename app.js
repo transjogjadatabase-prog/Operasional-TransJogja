@@ -833,7 +833,7 @@ function downloadTemplate(type) {
   if(type==='bus'){headers=['Lambung','No Polisi','Jalur','Tipe Bus','Karoseri','Warna Bus','Keterangan'];sampleRows=[['AB-001','AB 1234 CD','Koridor 1','Besar','Laksana','Hijau',''],['AB-002','AB 5678 EF','Koridor 2','Sedang','Adiputro','Putih','']];filename='Template_Bus.xlsx';}
   else if(type==='spbu'){headers=['Nama SPBU','ID SPBU','Alamat','No Hp','Status'];sampleRows=[['SPBU Jl. Magelang','34-151-01','Jl. Magelang No.10','081234567890','Aktif']];filename='Template_SPBU.xlsx';}
   else if(type==='bbm'){headers=['Tanggal','Lambung','Jalur','No Polisi','Waktu Pengisian','Nominal','SPBU','Halte Terakhir','Jam Halte Terakhir','Keterangan'];sampleRows=[['2026-03-09','AB-001','Koridor 1','AB 1234 CD','06:30','200000','SPBU Jl. Magelang','Halte Malioboro','06:15','']];filename='Template_BBM.xlsx';}
-  else if(type==='ops'){headers=['Tanggal','Lambung','Jalur','No Polisi','Jam Mulai Pool','Jam Akhir Pool','Km Awal Pool','Km Akhir Pool','Km Awal Halte','Km Akhir Halte','BBM (Rp)','RIT','Keterangan'];sampleRows=[['2026-03-09','AB-001','Koridor 1','AB 1234 CD','05:30','22:00','12500','12620','12510','12610','200000','8','']];filename='Template_Operasional.xlsx';}
+  else if(type==='ops'){headers=['Tanggal','Lambung','Jalur','No Polisi','Jam Mulai Pool','Jam Akhir Pool','Km Awal Pool','Km Akhir Pool','Km Awal Halte','Km Akhir Halte','RIT','Keterangan'];sampleRows=[['2026-03-09','AB-001','Koridor 1','AB 1234 CD','05:30','22:00','12500','12620','12510','12610','8','']];filename='Template_Operasional.xlsx';}
   var ws=XLSX.utils.aoa_to_sheet([headers].concat(sampleRows));
   ws['!cols']=headers.map(function(h){return{wch:Math.max(h.length+4,16)};});
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Template');XLSX.writeFile(wb,filename);
@@ -885,6 +885,8 @@ async function importData(type, input) {
   var reader=new FileReader();
   reader.onload=async function(e){
     try{
+      // Pastikan data BBM sudah terload untuk autofill ke operasional
+      if(type==='ops' && DB.bbm.length===0) await loadBBM();
       var wb=XLSX.read(e.target.result,{type:'binary'}),ws=wb.Sheets[wb.SheetNames[0]];
       var rows=XLSX.utils.sheet_to_json(ws,{defval:''});if(!rows.length)return toast('File kosong!',true);
       var records=[];
@@ -892,15 +894,40 @@ async function importData(type, input) {
       if(type==='bus')records=rows.filter(function(r){return r.Lambung||r.lambung;}).map(function(r){return{lambung:r.Lambung||r.lambung,nopol:r['No Polisi']||r.nopol||'',jalur:r.Jalur||r.jalur||'',tipe:r['Tipe Bus']||r.tipe||'',karoseri:r.Karoseri||r.karoseri||'',warna:r['Warna Bus']||r.warna||'',ket:r.Keterangan||r.ket||''};});
       else if(type==='spbu')records=rows.filter(function(r){return r['Nama SPBU']||r.nama;}).map(function(r){return{kode:r['ID SPBU']||r.kode||'',nama:r['Nama SPBU']||r.nama,alamat:r.Alamat||r.alamat||'',hp:r['No Hp']||r.hp||'',aktif:String(r.Status||'1').toLowerCase()==='aktif'||String(r.Status||'1')==='1'};});
       else if(type==='bbm')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){return{tgl:excelDateToStr(r.Tanggal||r.tgl),lambung:r.Lambung||r.lambung||'',jalur:r.Jalur||r.jalur||'',nopol:r['No Polisi']||r.nopol||'',waktu:excelTimeToStr(r['Waktu Pengisian']||r.waktu),nominal:parseFloat(r.Nominal||r.nominal||0),spbu:r.SPBU||r.spbu||'',halte:r['Halte Terakhir']||r.halte||'',jam_halte:excelTimeToStr(r['Jam Halte Terakhir']),ket:r.Keterangan||r.ket||''};});
-      else if(type==='ops')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){var bbmV=parseFloat(r['BBM (Rp)']||0),jm=excelTimeToStr(r['Jam Mulai Pool']),ja=excelTimeToStr(r['Jam Akhir Pool']);
-        var kmAP=parseFloat(r['Km Awal Pool'])||0,kmKP=parseFloat(r['Km Akhir Pool'])||0;
-        var kmAH=parseFloat(r['Km Awal Halte'])||0,kmKH=parseFloat(r['Km Akhir Halte'])||0;
-        var km=null,rat=null;
-        if(kmKP>0&&kmAP>0){km=parseFloat((kmKP-kmAP).toFixed(1));}
-        else if(kmKH>0&&kmAH>0){km=parseFloat((kmKH-kmAH).toFixed(1));}
-        if(km&&bbmV>0){rat=parseFloat((km/(bbmV/6800)).toFixed(2));}
-        return{tgl:excelDateToStr(r.Tanggal||r.tgl),lambung:r.Lambung||'',jalur:r.Jalur||'',nopol:r['No Polisi']||'',jam_mulai:jm,jam_akhir:ja,km_awal_pool:r['Km Awal Pool']||null,km_akhir_pool:r['Km Akhir Pool']||null,km_awal_halte:r['Km Awal Halte']||null,km_akhir_halte:r['Km Akhir Halte']||null,bbm_rp:bbmV,rit:parseInt(r.RIT||0),km_tempuh:km,ratio:rat,ket:r.Keterangan||''};});
+      else if(type==='ops'){
+        // Fetch fresh BBM dari Supabase untuk lookup akurat
+        var bbmLookup = {};
+        toast('⏳ Mengambil data BBM...');
+        var bbmFetch = await fetchAll('bbm','tgl',false);
+        var bbmSource = (bbmFetch.data && bbmFetch.data.length) ? bbmFetch.data : DB.bbm;
+        bbmSource.forEach(function(b){
+          var key = b.tgl+'|'+String(b.lambung).trim();
+          bbmLookup[key] = (bbmLookup[key]||0) + parseFloat(b.nominal||0);
+        });
+        var lookupCount = Object.keys(bbmLookup).length;
+        console.log('BBM lookup entries:', lookupCount, 'dari', bbmSource.length, 'record');
+        records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){
+          var tglStr=excelDateToStr(r.Tanggal||r.tgl);
+          var lambStr=String(r.Lambung||r.lambung||'').trim();
+          var key=tglStr+'|'+lambStr;
+          // Ambil BBM dari DB jika ada, fallback ke kolom Excel
+          var bbmV = bbmLookup[key] || parseFloat(r['BBM (Rp)']||0);
+          var jm=excelTimeToStr(r['Jam Mulai Pool']),ja=excelTimeToStr(r['Jam Akhir Pool']);
+          var kmAP=parseFloat(r['Km Awal Pool'])||0,kmKP=parseFloat(r['Km Akhir Pool'])||0;
+          var kmAH=parseFloat(r['Km Awal Halte'])||0,kmKH=parseFloat(r['Km Akhir Halte'])||0;
+          var km=null,rat=null;
+          if(kmKP>0&&kmAP>0){km=parseFloat((kmKP-kmAP).toFixed(1));}
+          else if(kmKH>0&&kmAH>0){km=parseFloat((kmKH-kmAH).toFixed(1));}
+          if(km&&bbmV>0){rat=parseFloat((km/(bbmV/6800)).toFixed(2));}
+          return{tgl:tglStr,lambung:lambStr,jalur:r.Jalur||'',nopol:r['No Polisi']||'',jam_mulai:jm,jam_akhir:ja,km_awal_pool:r['Km Awal Pool']||null,km_akhir_pool:r['Km Akhir Pool']||null,km_awal_halte:r['Km Awal Halte']||null,km_akhir_halte:r['Km Akhir Halte']||null,bbm_rp:bbmV,rit:parseInt(r.RIT||0),km_tempuh:km,ratio:rat,ket:r.Keterangan||''};
+        });
+      }
       if(!records.length)return toast('Tidak ada data valid!',true);
+      // Hitung berapa baris ops yang dapat data BBM dari lookup
+      if(type==='ops'){
+        var matched=records.filter(function(r){return r.bbm_rp>0;}).length;
+        console.log('OPS rows with BBM filled:', matched, '/', records.length);
+      }
       var tbl=type==='ops'?'operasional':type;var inserted=0;
       for(var i=0;i<records.length;i+=100){
         var chunk=records.slice(i,i+100);
