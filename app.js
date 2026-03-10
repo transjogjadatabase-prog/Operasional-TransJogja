@@ -556,8 +556,8 @@ async function loadBBM() {
 async function saveBBM() {
   var tgl=document.getElementById('bbm-tgl').value, lamb=document.getElementById('bbm-lambung').value, nominal=document.getElementById('bbm-nominal').value;
   if (!tgl||!lamb||!nominal) return toast('Tanggal, Lambung, dan Nominal wajib diisi!',true);
-  var _jamHalteVal=document.getElementById('bbm-jam-halte')?document.getElementById('bbm-jam-halte').value||null:null;
-  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:_jamHalteVal,ket:document.getElementById('bbm-ket').value};
+  var jamHalteEl=document.getElementById('bbm-jam-halte');
+  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:jamHalteEl?jamHalteEl.value||null:null,ket:document.getElementById('bbm-ket').value};
   var res;
   if (editIdx.bbm>=0){res=await db.from('bbm').update(row).eq('id',DB.bbm[editIdx.bbm].id);if(!res.error)toast('Data BBM diperbarui!');}
   else{res=await db.from('bbm').insert(row);if(!res.error)toast('Data BBM disimpan!');}
@@ -583,7 +583,8 @@ function editBBM(i) {
   document.getElementById('bbm-tgl').value=r.tgl;document.getElementById('bbm-lambung').value=r.lambung;autofillBBM();
   document.getElementById('bbm-waktu').value=r.waktu||'';document.getElementById('bbm-nominal').value=r.nominal;
   document.getElementById('bbm-spbu').value=r.spbu||'';document.getElementById('bbm-halte').value=r.halte||'';
-  document.getElementById('bbm-jam-halte').value=r.jamHalte||'';document.getElementById('bbm-ket').value=r.ket||'';
+  if(document.getElementById('bbm-jam-halte'))document.getElementById('bbm-jam-halte').value=r.jamHalte||'';
+  document.getElementById('bbm-ket').value=r.ket||'';
   document.getElementById('modal-bbm-title').textContent='Edit Data BBM';openModal('modal-bbm');
 }
 async function delBBM(i) {
