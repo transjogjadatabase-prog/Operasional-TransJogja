@@ -141,9 +141,9 @@ async function saveBus() {
 }
 function renderBus() {
   var tbody = document.getElementById('tbody-bus');
-  if (!DB.bus.length) { tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
+  if (!DB.bus.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.bus.map(function(r, i) {
-    return '<tr><td>' + r.id + '</td><td><strong>' + r.lambung + '</strong></td><td>' + r.nopol + '</td><td><span class="badge-status badge-aktif">' + r.jalur + '</span></td><td>' + (r.tipe||'-') + '</td><td>' + (r.karoseri||'-') + '</td><td>' + (r.warna||'-') + '</td><td>' + (r.ket||'-') + '</td><td>' + (r.foto ? '<img src="' + r.foto + '" style="width:44px;height:32px;object-fit:cover;border-radius:6px;">' : '—') + '</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBus(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBus(' + i + ')"><i class="fas fa-trash"></i></button></div></td></tr>';
+    return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td><td><strong>' + r.lambung + '</strong></td><td>' + r.nopol + '</td><td><span class="badge-status badge-aktif">' + r.jalur + '</span></td><td>' + (r.tipe||'-') + '</td><td>' + (r.karoseri||'-') + '</td><td>' + (r.warna||'-') + '</td><td>' + (r.ket||'-') + '</td><td>' + (r.foto ? '<img src="' + r.foto + '" style="width:44px;height:32px;object-fit:cover;border-radius:6px;">' : '—') + '</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBus(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBus(' + i + ')"><i class="fas fa-trash"></i></button></div></td></tr>';
   }).join('');
 }
 function editBus(i) {
@@ -184,7 +184,7 @@ function renderSpbu() {
   var tbody = document.getElementById('tbody-spbu');
   if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.spbu.map(function(r, i) {
-    return '<tr><td>' + r.id + '</td><td><strong>' + r.nama + '</strong></td><td>' + (r.alamat||'-') + '</td><td>' + (r.hp||'-') + '</td><td><span class="badge-status ' + (r.aktif?'badge-aktif':'badge-nonaktif') + '">' + (r.aktif?'Aktif':'Tidak Aktif') + '</span></td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editSpbu(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delSpbu(' + i + ')"><i class="fas fa-trash"></i></button></div></td></tr>';
+    return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td><td><strong>' + r.nama + '</strong></td><td>' + (r.alamat||'-') + '</td><td>' + (r.hp||'-') + '</td><td><span class="badge-status ' + (r.aktif?'badge-aktif':'badge-nonaktif') + '">' + (r.aktif?'Aktif':'Tidak Aktif') + '</span></td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editSpbu(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delSpbu(' + i + ')"><i class="fas fa-trash"></i></button></div></td></tr>';
   }).join('');
 }
 function editSpbu(i) {
@@ -242,7 +242,7 @@ async function saveBBM() {
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
   if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
-  tbody.innerHTML=DB.bbm.map(function(r,i){return '<tr><td>'+r.id+'</td><td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td><td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBM('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBM('+i+')"><i class="fas fa-trash"></i></button></div></td></tr>';}).join('');
+  tbody.innerHTML=DB.bbm.map(function(r,i){return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'<td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td><td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBM('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBM('+i+')"><i class="fas fa-trash"></i></button></div></td></tr>';}).join('');
 }
 function editBBM(i) {
   editIdx.bbm=i;var r=DB.bbm[i];populateLambDropdowns();populateSpbuDropdowns();
@@ -296,7 +296,7 @@ async function saveOps() {
 function renderOps() {
   var tbody=document.getElementById('tbody-ops');
   if(!DB.ops.length){tbody.innerHTML='<tr><td colspan="17"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
-  tbody.innerHTML=DB.ops.map(function(r,i){return '<tr><td>'+r.id+'</td><td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.jamMulai||'-')+'</td><td>'+(r.jamAkhir||'-')+'</td><td>'+(r.kmAwalPool||'-')+'</td><td>'+(r.kmAkhirPool||'-')+'</td><td>'+(r.kmAwalHalte||'-')+'</td><td>'+(r.kmAkhirHalte||'-')+'</td><td>Rp '+(r.bbm?Number(r.bbm).toLocaleString():'-')+'</td><td>'+(r.rit||'-')+'</td><td><strong>'+(r.kmTempuh||'-')+'</strong></td><td>'+(r.ratio||'-')+'</td><td>'+(r.ket||'-')+'</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOps('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOps('+i+')"><i class="fas fa-trash"></i></button></div></td></tr>';}).join('');
+  tbody.innerHTML=DB.ops.map(function(r,i){return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td><td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.jamMulai||'-')+'</td><td>'+(r.jamAkhir||'-')+'</td><td>'+(r.kmAwalPool||'-')+'</td><td>'+(r.kmAkhirPool||'-')+'</td><td>'+(r.kmAwalHalte||'-')+'</td><td>'+(r.kmAkhirHalte||'-')+'</td><td>Rp '+(r.bbm?Number(r.bbm).toLocaleString():'-')+'</td><td>'+(r.rit||'-')+'</td><td><strong>'+(r.kmTempuh||'-')+'</strong></td><td>'+(r.ratio||'-')+'</td><td>'+(r.ket||'-')+'</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOps('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOps('+i+')"><i class="fas fa-trash"></i></button></div></td></tr>';}).join('');
 }
 function editOps(i) {
   editIdx.ops=i;var r=DB.ops[i];populateLambDropdowns();
