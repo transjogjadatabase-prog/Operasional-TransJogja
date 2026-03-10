@@ -219,13 +219,14 @@
             <button class="btn btn-outline btn-sm" onclick="downloadTemplate('bus')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('bus',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('bus')"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-outline btn-sm" id="btn-delmode-bus" style="color:#e53e3e;border-color:#e53e3e;" onclick="toggleDeleteMode('bus')"><i class="fas fa-trash"></i> Hapus Data</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-bus')"><i class="fas fa-plus"></i> Tambah Bus</button>
           </div>
         </div>
         <div class="table-wrap">
           <table id="tbl-bus">
             <thead><tr>
-              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bus',this)"></th>
+              <th class="cb-th cb-th-hide" id="cb-th-bus"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bus',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Lambung</th><th>No Polisi</th><th>Jalur</th><th>Tipe Bus</th><th>Karoseri</th><th>Warna</th><th>Keterangan</th><th>Foto</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-bus"></tbody>
@@ -253,13 +254,14 @@
             <button class="btn btn-outline btn-sm" onclick="downloadTemplate('spbu')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('spbu',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('spbu')"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-outline btn-sm" id="btn-delmode-spbu" style="color:#e53e3e;border-color:#e53e3e;" onclick="toggleDeleteMode('spbu')"><i class="fas fa-trash"></i> Hapus Data</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-spbu')"><i class="fas fa-plus"></i> Tambah SPBU</button>
           </div>
         </div>
         <div class="table-wrap">
           <table id="tbl-spbu">
             <thead><tr>
-              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('spbu',this)"></th>
+              <th class="cb-th cb-th-hide" id="cb-th-spbu"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('spbu',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Nama SPBU</th><th>ID SPBU</th><th>Alamat</th><th>No HP</th><th>Status</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-spbu"></tbody>
@@ -287,13 +289,14 @@
             <button class="btn btn-outline btn-sm" onclick="downloadTemplate('bbm')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('bbm',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('bbm')"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-outline btn-sm" id="btn-delmode-bbm" style="color:#e53e3e;border-color:#e53e3e;" onclick="toggleDeleteMode('bbm')"><i class="fas fa-trash"></i> Hapus Data</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-bbm')"><i class="fas fa-plus"></i> Tambah</button>
           </div>
         </div>
         <div class="table-wrap">
           <table id="tbl-bbm">
             <thead><tr>
-              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bbm',this)"></th>
+              <th class="cb-th cb-th-hide" id="cb-th-bbm"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bbm',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal (Rp)</th><th>SPBU</th><th>Halte Terakhir</th><th>Jam Halte</th><th>Ket.</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-bbm"></tbody>
@@ -321,13 +324,14 @@
             <button class="btn btn-outline btn-sm" onclick="downloadTemplate('ops')" title="Download template Excel untuk import"><i class="fas fa-download"></i> Template</button>
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('ops',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('ops')"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-outline btn-sm" id="btn-delmode-ops" style="color:#e53e3e;border-color:#e53e3e;" onclick="toggleDeleteMode('ops')"><i class="fas fa-trash"></i> Hapus Data</button>
             <button class="btn btn-primary btn-sm" onclick="openModal('modal-ops')"><i class="fas fa-plus"></i> Tambah</button>
           </div>
         </div>
         <div class="table-wrap" style="font-size:12px;">
           <table id="tbl-ops">
             <thead><tr>
-              <th class="cb-th"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('ops',this)"></th>
+              <th class="cb-th cb-th-hide" id="cb-th-ops"><input type="checkbox" class="cb-select" onclick="toggleSelectAll('ops',this)"></th>
               <th style="width:48px;text-align:center;">No.</th><th>Tgl</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Jam Mulai</th><th>Jam Akhir</th><th>Km Awal Pool</th><th>Km Akhir Pool</th><th>Km Awal Halte</th><th>Km Akhir Halte</th><th>BBM (Rp)</th><th>RIT</th><th>Km Tempuh</th><th>Ratio</th><th>Ket.</th><th>Aksi</th>
             </tr></thead>
             <tbody id="tbody-ops"></tbody>
