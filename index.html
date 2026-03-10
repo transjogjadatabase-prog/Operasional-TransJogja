@@ -444,7 +444,7 @@
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group"><label>Tanggal *</label><input type="date" id="ops-tgl"></div>
+        <div class="form-group"><label>Tanggal *</label><input type="date" id="ops-tgl" onchange="autofillOps()"></div>
         <div class="form-group"><label>Lambung *</label><select id="ops-lambung" onchange="autofillOps()"><option value="">-- Pilih Lambung --</option></select></div>
         <div class="form-group"><label>Jalur</label><input type="text" id="ops-jalur" readonly style="background:#f4f6f5;"></div>
         <div class="form-group"><label>No Polisi</label><input type="text" id="ops-nopol" readonly style="background:#f4f6f5;"></div>
@@ -454,7 +454,7 @@
         <div class="form-group"><label>Km Akhir Pool</label><input type="number" id="ops-km-akhir-pool" min="0"></div>
         <div class="form-group"><label>Km Awal Halte</label><input type="number" id="ops-km-awal-halte" min="0"></div>
         <div class="form-group"><label>Km Akhir Halte</label><input type="number" id="ops-km-akhir-halte" min="0"></div>
-        <div class="form-group"><label>BBM (Rp) *</label><input type="number" id="ops-bbm" min="0" onchange="calcOps()"></div>
+        <div class="form-group"><label>BBM (Rp) *</label><input type="number" id="ops-bbm" min="0" onchange="calcOps()"><span id="ops-bbm-info" style="display:none;font-size:11.5px;color:var(--green-main);margin-top:4px;font-weight:600;"></span></div>
         <div class="form-group"><label>RIT</label><input type="number" id="ops-rit" min="0"></div>
         <div class="form-group">
           <label>Km Tempuh <span style="font-size:10px;color:var(--green-main)">(otomatis)</span></label>
