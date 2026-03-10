@@ -324,9 +324,30 @@ function fillBBMFromData(tgl, lambung) {
   }
 }
 function calcOps() {
-  var jm=document.getElementById('ops-jam-mulai').value,ja=document.getElementById('ops-jam-akhir').value;
-  var bbm=parseFloat(document.getElementById('ops-bbm').value)||0;
-  if(jm&&ja){var hm=parseInt(jm),mm=parseInt(jm.split(':')[1]),ha=parseInt(ja),ma=parseInt(ja.split(':')[1]);var d=(ha*60+ma)-(hm*60+mm);if(d<0)d+=1440;document.getElementById('ops-km-tempuh').value=d+' menit';if(bbm>0)document.getElementById('ops-ratio').value=(d/(bbm/6800)).toFixed(2);}
+  var kmAwalPool  = parseFloat(document.getElementById('ops-km-awal-pool').value)  || 0;
+  var kmAkhirPool = parseFloat(document.getElementById('ops-km-akhir-pool').value) || 0;
+  var kmAwalHalte  = parseFloat(document.getElementById('ops-km-awal-halte').value)  || 0;
+  var kmAkhirHalte = parseFloat(document.getElementById('ops-km-akhir-halte').value) || 0;
+  var bbm = parseFloat(document.getElementById('ops-bbm').value) || 0;
+
+  // Km Tempuh = (Km Akhir Pool - Km Awal Pool) atau pakai halte jika pool tidak ada
+  var kmTempuh = 0;
+  if (kmAkhirPool > 0 && kmAwalPool > 0) {
+    kmTempuh = kmAkhirPool - kmAwalPool;
+  } else if (kmAkhirHalte > 0 && kmAwalHalte > 0) {
+    kmTempuh = kmAkhirHalte - kmAwalHalte;
+  }
+
+  if (kmTempuh > 0) {
+    document.getElementById('ops-km-tempuh').value = kmTempuh.toFixed(1);
+    if (bbm > 0) {
+      var liter = bbm / 6800;
+      document.getElementById('ops-ratio').value = (kmTempuh / liter).toFixed(2);
+    }
+  } else {
+    document.getElementById('ops-km-tempuh').value = '';
+    document.getElementById('ops-ratio').value = '';
+  }
 }
 async function loadOps() {
   setLoading('tbody-ops',17);
@@ -341,7 +362,13 @@ async function saveOps() {
   var jm=document.getElementById('ops-jam-mulai').value,ja=document.getElementById('ops-jam-akhir').value;
   var bbmVal=parseFloat(document.getElementById('ops-bbm').value)||0;
   var kmTempuh=null,ratio=null;
-  if(jm&&ja){var p=jm.split(':'),q=ja.split(':');var d=(parseInt(q[0])*60+parseInt(q[1]))-(parseInt(p[0])*60+parseInt(p[1]));if(d<0)d+=1440;kmTempuh=d;if(bbmVal>0)ratio=parseFloat((d/(bbmVal/6800)).toFixed(2));}
+  var kmAP=parseFloat(document.getElementById('ops-km-awal-pool').value)||0;
+  var kmKP=parseFloat(document.getElementById('ops-km-akhir-pool').value)||0;
+  var kmAH=parseFloat(document.getElementById('ops-km-awal-halte').value)||0;
+  var kmKH=parseFloat(document.getElementById('ops-km-akhir-halte').value)||0;
+  if(kmKP>0&&kmAP>0){kmTempuh=parseFloat((kmKP-kmAP).toFixed(1));}
+  else if(kmKH>0&&kmAH>0){kmTempuh=parseFloat((kmKH-kmAH).toFixed(1));}
+  if(kmTempuh&&bbmVal>0){ratio=parseFloat((kmTempuh/(bbmVal/6800)).toFixed(2));}
   var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('ops-jalur').value,nopol:document.getElementById('ops-nopol').value,jam_mulai:jm||null,jam_akhir:ja||null,km_awal_pool:parseFloat(document.getElementById('ops-km-awal-pool').value)||null,km_akhir_pool:parseFloat(document.getElementById('ops-km-akhir-pool').value)||null,km_awal_halte:parseFloat(document.getElementById('ops-km-awal-halte').value)||null,km_akhir_halte:parseFloat(document.getElementById('ops-km-akhir-halte').value)||null,bbm_rp:bbmVal,rit:parseInt(document.getElementById('ops-rit').value)||0,km_tempuh:kmTempuh,ratio:ratio,ket:document.getElementById('ops-ket').value};
   var res;
   if(editIdx.ops>=0){res=await db.from('operasional').update(row).eq('id',DB.ops[editIdx.ops].id);if(!res.error)toast('Data operasional diperbarui!');}
@@ -457,7 +484,14 @@ async function importData(type, input) {
       if(type==='bus')records=rows.filter(function(r){return r.Lambung||r.lambung;}).map(function(r){return{lambung:r.Lambung||r.lambung,nopol:r['No Polisi']||r.nopol||'',jalur:r.Jalur||r.jalur||'',tipe:r['Tipe Bus']||r.tipe||'',karoseri:r.Karoseri||r.karoseri||'',warna:r['Warna Bus']||r.warna||'',ket:r.Keterangan||r.ket||''};});
       else if(type==='spbu')records=rows.filter(function(r){return r['Nama SPBU']||r.nama;}).map(function(r){return{kode:r['ID SPBU']||r.kode||'',nama:r['Nama SPBU']||r.nama,alamat:r.Alamat||r.alamat||'',hp:r['No Hp']||r.hp||'',aktif:String(r.Status||'1').toLowerCase()==='aktif'||String(r.Status||'1')==='1'};});
       else if(type==='bbm')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){return{tgl:r.Tanggal||r.tgl,lambung:r.Lambung||r.lambung||'',jalur:r.Jalur||r.jalur||'',nopol:r['No Polisi']||r.nopol||'',waktu:r['Waktu Pengisian']||r.waktu||null,nominal:parseFloat(r.Nominal||r.nominal||0),spbu:r.SPBU||r.spbu||'',halte:r['Halte Terakhir']||r.halte||'',jam_halte:r['Jam Halte Terakhir']||null,ket:r.Keterangan||r.ket||''};});
-      else if(type==='ops')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){var bbmV=parseFloat(r['BBM (Rp)']||0),jm=r['Jam Mulai Pool']||null,ja=r['Jam Akhir Pool']||null,km=null,rat=null;if(jm&&ja){var p=jm.split(':'),q=ja.split(':');var d=(parseInt(q[0])*60+parseInt(q[1]))-(parseInt(p[0])*60+parseInt(p[1]));if(d<0)d+=1440;km=d;if(bbmV>0)rat=parseFloat((d/(bbmV/6800)).toFixed(2));}return{tgl:r.Tanggal||r.tgl,lambung:r.Lambung||'',jalur:r.Jalur||'',nopol:r['No Polisi']||'',jam_mulai:jm,jam_akhir:ja,km_awal_pool:r['Km Awal Pool']||null,km_akhir_pool:r['Km Akhir Pool']||null,km_awal_halte:r['Km Awal Halte']||null,km_akhir_halte:r['Km Akhir Halte']||null,bbm_rp:bbmV,rit:parseInt(r.RIT||0),km_tempuh:km,ratio:rat,ket:r.Keterangan||''};});
+      else if(type==='ops')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){var bbmV=parseFloat(r['BBM (Rp)']||0),jm=r['Jam Mulai Pool']||null,ja=r['Jam Akhir Pool']||null;
+        var kmAP=parseFloat(r['Km Awal Pool'])||0,kmKP=parseFloat(r['Km Akhir Pool'])||0;
+        var kmAH=parseFloat(r['Km Awal Halte'])||0,kmKH=parseFloat(r['Km Akhir Halte'])||0;
+        var km=null,rat=null;
+        if(kmKP>0&&kmAP>0){km=parseFloat((kmKP-kmAP).toFixed(1));}
+        else if(kmKH>0&&kmAH>0){km=parseFloat((kmKH-kmAH).toFixed(1));}
+        if(km&&bbmV>0){rat=parseFloat((km/(bbmV/6800)).toFixed(2));}
+        return{tgl:r.Tanggal||r.tgl,lambung:r.Lambung||'',jalur:r.Jalur||'',nopol:r['No Polisi']||'',jam_mulai:jm,jam_akhir:ja,km_awal_pool:r['Km Awal Pool']||null,km_akhir_pool:r['Km Akhir Pool']||null,km_awal_halte:r['Km Awal Halte']||null,km_akhir_halte:r['Km Akhir Halte']||null,bbm_rp:bbmV,rit:parseInt(r.RIT||0),km_tempuh:km,ratio:rat,ket:r.Keterangan||''};});
       if(!records.length)return toast('Tidak ada data valid!',true);
       var tbl=type==='ops'?'operasional':type;var inserted=0;
       for(var i=0;i<records.length;i+=100){
