@@ -359,11 +359,87 @@ async function saveBus() {
   if (res.error) return toast('Error: ' + res.error.message, true);
   closeModal('modal-bus'); loadBus(); updateDashboard();
 }
+// ============================================================
+// MULTI DELETE
+// ============================================================
+var selectedIds = { bus:[], spbu:[], bbm:[], ops:[] };
+
+function toggleSelectAll(type, cb) {
+  var checks = document.querySelectorAll('#tbody-' + type + ' .cb-row');
+  checks.forEach(function(c) {
+    c.checked = cb.checked;
+    var row = c.closest('tr');
+    if (cb.checked) row.classList.add('selected-row'); else row.classList.remove('selected-row');
+  });
+  updateBulkBar(type);
+}
+function onRowCheck(type, cb, id) {
+  var row = cb.closest('tr');
+  if (cb.checked) row.classList.add('selected-row'); else row.classList.remove('selected-row');
+  updateBulkBar(type);
+}
+function updateBulkBar(type) {
+  var checks = document.querySelectorAll('#tbody-' + type + ' .cb-row:checked');
+  var bar = document.getElementById('bulk-bar-' + type);
+  var cnt = document.getElementById('bulk-count-' + type);
+  if (checks.length > 0) { bar.classList.add('show'); cnt.textContent = checks.length + ' data dipilih'; }
+  else { bar.classList.remove('show'); }
+  // sync select-all header checkbox
+  var all = document.querySelectorAll('#tbody-' + type + ' .cb-row');
+  var hdr = document.querySelector('#tbl-' + type + ' thead .cb-select');
+  if (hdr) hdr.indeterminate = checks.length > 0 && checks.length < all.length;
+  if (hdr) hdr.checked = all.length > 0 && checks.length === all.length;
+}
+function clearSelect(type) {
+  document.querySelectorAll('#tbody-' + type + ' .cb-row').forEach(function(c){ c.checked=false; c.closest('tr').classList.remove('selected-row'); });
+  var hdr = document.querySelector('#tbl-' + type + ' thead .cb-select');
+  if(hdr){ hdr.checked=false; hdr.indeterminate=false; }
+  document.getElementById('bulk-bar-'+type).classList.remove('show');
+}
+function getCheckedIds(type) {
+  var ids = [];
+  document.querySelectorAll('#tbody-' + type + ' .cb-row:checked').forEach(function(c){ ids.push(c.value); });
+  return ids;
+}
+async function bulkDelete(type) {
+  var ids = getCheckedIds(type);
+  if (!ids.length) return toast('Pilih data terlebih dahulu!', true);
+  if (!confirm('Hapus ' + ids.length + ' data yang dipilih?')) return;
+  var tbl = type === 'ops' ? 'operasional' : type;
+  var res = await db.from(tbl).delete().in('id', ids);
+  if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
+  toast('✅ ' + ids.length + ' data dihapus.');
+  clearSelect(type);
+  if(type==='bus')loadBus(); else if(type==='spbu')loadSpbu(); else if(type==='bbm')loadBBM(); else if(type==='ops')loadOps();
+  updateDashboard();
+}
+async function deleteAll(type) {
+  var DB_arr = type==='ops' ? DB.ops : DB[type];
+  if (!DB_arr.length) return toast('Tidak ada data!', true);
+  if (!confirm('⚠️ Hapus SEMUA ' + DB_arr.length + ' data ' + type.toUpperCase() + '? Tindakan ini tidak bisa dibatalkan!')) return;
+  var tbl = type === 'ops' ? 'operasional' : type;
+  var ids = DB_arr.map(function(r){ return r.id; });
+  var res = await db.from(tbl).delete().in('id', ids);
+  if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
+  toast('✅ Semua data ' + type.toUpperCase() + ' dihapus.');
+  clearSelect(type);
+  if(type==='bus')loadBus(); else if(type==='spbu')loadSpbu(); else if(type==='bbm')loadBBM(); else if(type==='ops')loadOps();
+  updateDashboard();
+}
+
 function renderBus() {
   var tbody = document.getElementById('tbody-bus');
   if (!DB.bus.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.bus.map(function(r, i) {
-    return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td><td><strong>' + r.lambung + '</strong></td><td>' + r.nopol + '</td><td><span class="badge-status badge-aktif">' + r.jalur + '</span></td><td>' + (r.tipe||'-') + '</td><td>' + (r.karoseri||'-') + '</td><td>' + (r.warna||'-') + '</td><td>' + (r.ket||'-') + '</td><td>' + (r.foto ? '<img src="' + r.foto + '" style="width:44px;height:32px;object-fit:cover;border-radius:6px;">' : '—') + '</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBus(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBus(' + i + ')"><i class="fas fa-trash"></i></button></div></td></tr>';
+    return '<tr>'
+      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck('bus',this,''+r.id+'')"></td>'
+      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td><strong>'+r.lambung+'</strong></td><td>'+r.nopol+'</td>'
+      +'<td><span class="badge-status badge-aktif">'+r.jalur+'</span></td>'
+      +'<td>'+(r.tipe||'-')+'</td><td>'+(r.karoseri||'-')+'</td><td>'+(r.warna||'-')+'</td><td>'+(r.ket||'-')+'</td>'
+      +'<td>'+(r.foto?'<img src="'+r.foto+'" style="width:44px;height:32px;object-fit:cover;border-radius:6px;">':'—')+'</td>'
+      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBus('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBus('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'</tr>';
   }).join('');
 }
 function editBus(i) {
@@ -471,7 +547,16 @@ async function saveBBM() {
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
   if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
-  tbody.innerHTML=DB.bbm.map(function(r,i){return '<tr><td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'<td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td><td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td><td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBM('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBM('+i+')"><i class="fas fa-trash"></i></button></div></td></tr>';}).join('');
+  tbody.innerHTML=DB.bbm.map(function(r,i){
+    return '<tr>'
+      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck('bbm',this,''+r.id+'')"></td>'
+      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td>'
+      +'<td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td>'
+      +'<td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td>'
+      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBM('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBM('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'</tr>';
+  }).join('');
 }
 function editBBM(i) {
   editIdx.bbm=i;var r=DB.bbm[i];populateLambDropdowns();populateSpbuDropdowns();
@@ -602,6 +687,7 @@ function renderOps() {
   tbody.innerHTML=DB.ops.map(function(r,i){
     function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
     return '<tr>'
+      +'<td style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck('ops',this,''+r.id+'')"></td>'
       +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td>'
