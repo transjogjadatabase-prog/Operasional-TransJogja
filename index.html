@@ -30,40 +30,40 @@
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Menu Utama</div>
-    <button class="nav-item active" onclick="goPage('dashboard')">
+    <button data-page="dashboard" class="nav-item active" onclick="goPage('dashboard')">
       <span class="icon"><i class="fas fa-th-large"></i></span> Dashboard
     </button>
   </div>
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Data Master</div>
-    <button class="nav-item" onclick="goPage('data-bus')">
+    <button data-page="data-bus" class="nav-item" onclick="goPage('data-bus')">
       <span class="icon"><i class="fas fa-bus"></i></span> Data Bus
     </button>
-    <button class="nav-item" onclick="goPage('data-spbu')">
+    <button data-page="data-spbu" class="nav-item" onclick="goPage('data-spbu')">
       <span class="icon"><i class="fas fa-gas-pump"></i></span> Data SPBU
     </button>
   </div>
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Input Data</div>
-    <button class="nav-item" onclick="goPage('input-bbm')">
+    <button data-page="input-bbm" class="nav-item" onclick="goPage('input-bbm')">
       <span class="icon"><i class="fas fa-fill-drip"></i></span> Input BBM
     </button>
-    <button class="nav-item" onclick="goPage('input-ops')">
+    <button data-page="input-ops" class="nav-item" onclick="goPage('input-ops')">
       <span class="icon"><i class="fas fa-clipboard-list"></i></span> Input Operasional
     </button>
   </div>
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Laporan</div>
-    <button class="nav-item" onclick="goPage('lap-bbm-waktu')">
+    <button data-page="lap-bbm-waktu" class="nav-item" onclick="goPage('lap-bbm-waktu')">
       <span class="icon"><i class="fas fa-clock"></i></span> Waktu Pengisian BBM
     </button>
-    <button class="nav-item" onclick="goPage('lap-bbm')">
+    <button data-page="lap-bbm" class="nav-item" onclick="goPage('lap-bbm')">
       <span class="icon"><i class="fas fa-chart-bar"></i></span> Laporan BBM
     </button>
-    <button class="nav-item" onclick="goPage('lap-ops')">
+    <button data-page="lap-ops" class="nav-item" onclick="goPage('lap-ops')">
       <span class="icon"><i class="fas fa-chart-line"></i></span> Laporan Operasional
     </button>
   </div>
@@ -476,4 +476,4 @@
 <!-- Toast -->
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toast-msg"></span></div>
 
-<script src="app.js" defer></script>
+<script src="app.js"></script>
