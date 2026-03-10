@@ -207,7 +207,7 @@ function renderAkun() {
     var roleBadge = '<span class="badge-role-'+r.role+'">'+r.role.charAt(0).toUpperCase()+r.role.slice(1)+'</span>';
     var isMe = currentUser && currentUser.id === r.id;
     return '<tr>'
-      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td><strong>'+r.nama+'</strong>'+(isMe?' <span style="font-size:10px;color:var(--green-main);">(Anda)</span>':'')+'</td>'
       +'<td><code style="background:var(--gray-100);padding:2px 8px;border-radius:6px;">'+r.username+'</code></td>'
       +'<td>'+roleBadge+'</td>'
@@ -469,7 +469,7 @@ function renderBus() {
   if (!DB.bus.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.bus.map(function(r, i) {
     return '<tr>'
-      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td><td>'+r.nopol+'</td>'
       +'<td><span class="badge-status badge-aktif">'+r.jalur+'</span></td>'
       +'<td>'+(r.tipe||'-')+'</td><td>'+(r.karoseri||'-')+'</td><td>'+(r.warna||'-')+'</td><td>'+(r.ket||'-')+'</td>'
@@ -518,7 +518,7 @@ function renderSpbu() {
   if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.spbu.map(function(r, i) {
     return '<tr>'
-      + '<td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td>'
+      + '<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td>'
       + '<td><strong>' + r.nama + '</strong></td>'
       + '<td><span style="font-family:monospace;font-size:12px;background:var(--green-pale);color:var(--green-dark);padding:3px 10px;border-radius:6px;font-weight:700;">' + (r.kode||'—') + '</span></td>'
       + '<td>' + (r.alamat||'-') + '</td>'
@@ -588,7 +588,7 @@ function renderBBM() {
   if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
   tbody.innerHTML=DB.bbm.map(function(r,i){
     return '<tr>'
-      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td>'
       +'<td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td>'
       +'<td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td>'
@@ -727,7 +727,7 @@ function renderOps() {
   tbody.innerHTML=DB.ops.map(function(r,i){
     function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
     return '<tr>'
-      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td>'
       +'<td>'+r.jalur+'</td>'
@@ -808,7 +808,7 @@ function generateLapBBM() {
   if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
   var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort(),dates=[...new Set(data.map(function(r){return r.tgl;}))].sort();
   var tot=data.reduce(function(s,r){return s+Number(r.nominal);},0);
-  var html='<div class="card"><div class="card-header"><div class="card-title">Laporan BBM Harian</div></div><div class="table-wrap"><table><thead><tr><th>Lambung</th>'+dates.map(function(d){return'<th>'+d+'</th>';}).join('')+'<th>TOTAL</th></tr></thead><tbody>';
+  var html='<div class="card"><div class="card-header"><div class="card-title">Laporan BBM Harian</div></div><div class="table-wrap table-freeze"><table><thead><tr><th class="freeze-col">Lambung</th>'+dates.map(function(d){return'<th>'+d+'</th>';}).join('')+'<th>TOTAL</th></tr></thead><tbody>';
   lambs.forEach(function(lamb){var rowTot=0;html+='<tr><td><strong>'+lamb+'</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.lambung===lamb&&r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);rowTot+=s;html+='<td>'+(s?'Rp '+s.toLocaleString():'-')+'</td>';});html+='<td><strong>Rp '+rowTot.toLocaleString()+'</strong></td></tr>';});
   html+='<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td><strong style="color:var(--green-dark);">TOTAL</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);html+='<td><strong style="color:var(--green-dark);">Rp '+s.toLocaleString()+'</strong></td>';});
   html+='<td><strong style="color:var(--green-dark);">Rp '+tot.toLocaleString()+'</strong></td></tr></tbody></table></div></div>';
