@@ -3,7 +3,7 @@
 // ============================================================
 const SUPABASE_URL      = 'https://XXXXXXXXXXXX.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============ STATE ============
 let DB = { bus: [], spbu: [], bbm: [], ops: [] };
@@ -113,7 +113,7 @@ function setLoading(tbodyId, colspan) {
 // ============================================================
 async function loadBus() {
   setLoading('tbody-bus', 10);
-  var r = await supabase.from('bus').select('*').order('created_at', { ascending: false });
+  var r = await db.from('bus').select('*').order('created_at', { ascending: false });
   if (r.error) return toast('Gagal memuat data bus: ' + r.error.message, true);
   DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
   renderBus(); populateLambDropdowns();
@@ -128,14 +128,14 @@ async function saveBus() {
   if (fotoFile) {
     var ext = fotoFile.name.split('.').pop();
     var path = 'bus/' + lambung + '_' + Date.now() + '.' + ext;
-    var up = await supabase.storage.from('foto-bus').upload(path, fotoFile, { upsert: true });
+    var up = await db.storage.from('foto-bus').upload(path, fotoFile, { upsert: true });
     if (up.error) return toast('Gagal upload foto: ' + up.error.message, true);
-    foto_url = supabase.storage.from('foto-bus').getPublicUrl(path).data.publicUrl;
+    foto_url = db.storage.from('foto-bus').getPublicUrl(path).data.publicUrl;
   }
   var row = { lambung:lambung, nopol:nopol, jalur:jalur, tipe:document.getElementById('bus-tipe').value, karoseri:document.getElementById('bus-karoseri').value, warna:document.getElementById('bus-warna').value, ket:document.getElementById('bus-ket').value, foto_url:foto_url };
   var res;
-  if (editIdx.bus >= 0) { res = await supabase.from('bus').update(row).eq('id', DB.bus[editIdx.bus].id); if (!res.error) toast('Data bus diperbarui!'); }
-  else { row.id = 'B' + String(Date.now()).slice(-6); res = await supabase.from('bus').insert(row); if (!res.error) toast('Data bus disimpan!'); }
+  if (editIdx.bus >= 0) { res = await db.from('bus').update(row).eq('id', DB.bus[editIdx.bus].id); if (!res.error) toast('Data bus diperbarui!'); }
+  else { row.id = 'B' + String(Date.now()).slice(-6); res = await db.from('bus').insert(row); if (!res.error) toast('Data bus disimpan!'); }
   if (res.error) return toast('Error: ' + res.error.message, true);
   closeModal('modal-bus'); loadBus(); updateDashboard();
 }
@@ -155,7 +155,7 @@ function editBus(i) {
 }
 async function delBus(i) {
   if (!confirm('Hapus data bus ini?')) return;
-  var res = await supabase.from('bus').delete().eq('id', DB.bus[i].id);
+  var res = await db.from('bus').delete().eq('id', DB.bus[i].id);
   if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
   toast('Data bus dihapus.'); loadBus(); updateDashboard();
 }
@@ -165,7 +165,7 @@ async function delBus(i) {
 // ============================================================
 async function loadSpbu() {
   setLoading('tbody-spbu', 6);
-  var r = await supabase.from('spbu').select('*').order('created_at', { ascending: false });
+  var r = await db.from('spbu').select('*').order('created_at', { ascending: false });
   if (r.error) return toast('Gagal memuat SPBU: ' + r.error.message, true);
   DB.spbu = r.data.map(function(d) { return { id:d.id, nama:d.nama, alamat:d.alamat, hp:d.hp, aktif:d.aktif }; });
   renderSpbu(); populateSpbuDropdowns();
@@ -175,8 +175,8 @@ async function saveSpbu() {
   if (!nama) return toast('Nama SPBU wajib diisi!', true);
   var row = { nama:nama, alamat:document.getElementById('spbu-alamat').value, hp:document.getElementById('spbu-hp').value, aktif:document.getElementById('spbu-status').value==='1' };
   var res;
-  if (editIdx.spbu >= 0) { res = await supabase.from('spbu').update(row).eq('id', DB.spbu[editIdx.spbu].id); if (!res.error) toast('Data SPBU diperbarui!'); }
-  else { row.id = 'S' + String(Date.now()).slice(-6); res = await supabase.from('spbu').insert(row); if (!res.error) toast('Data SPBU disimpan!'); }
+  if (editIdx.spbu >= 0) { res = await db.from('spbu').update(row).eq('id', DB.spbu[editIdx.spbu].id); if (!res.error) toast('Data SPBU diperbarui!'); }
+  else { row.id = 'S' + String(Date.now()).slice(-6); res = await db.from('spbu').insert(row); if (!res.error) toast('Data SPBU disimpan!'); }
   if (res.error) return toast('Error: ' + res.error.message, true);
   closeModal('modal-spbu'); loadSpbu(); updateDashboard();
 }
@@ -195,7 +195,7 @@ function editSpbu(i) {
 }
 async function delSpbu(i) {
   if (!confirm('Hapus data SPBU ini?')) return;
-  var res = await supabase.from('spbu').delete().eq('id', DB.spbu[i].id);
+  var res = await db.from('spbu').delete().eq('id', DB.spbu[i].id);
   if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
   toast('Data SPBU dihapus.'); loadSpbu(); updateDashboard();
 }
@@ -224,7 +224,7 @@ function autofillBBM() {
 }
 async function loadBBM() {
   setLoading('tbody-bbm', 12);
-  var r = await supabase.from('bbm').select('*').order('tgl', { ascending: false });
+  var r = await db.from('bbm').select('*').order('tgl', { ascending: false });
   if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
   DB.bbm = r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:d.nominal,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};});
   renderBBM();
@@ -234,8 +234,8 @@ async function saveBBM() {
   if (!tgl||!lamb||!nominal) return toast('Tanggal, Lambung, dan Nominal wajib diisi!',true);
   var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:document.getElementById('bbm-jam-halte').value||null,ket:document.getElementById('bbm-ket').value};
   var res;
-  if (editIdx.bbm>=0){res=await supabase.from('bbm').update(row).eq('id',DB.bbm[editIdx.bbm].id);if(!res.error)toast('Data BBM diperbarui!');}
-  else{row.id='BBM'+String(Date.now()).slice(-6);res=await supabase.from('bbm').insert(row);if(!res.error)toast('Data BBM disimpan!');}
+  if (editIdx.bbm>=0){res=await db.from('bbm').update(row).eq('id',DB.bbm[editIdx.bbm].id);if(!res.error)toast('Data BBM diperbarui!');}
+  else{row.id='BBM'+String(Date.now()).slice(-6);res=await db.from('bbm').insert(row);if(!res.error)toast('Data BBM disimpan!');}
   if(res.error)return toast('Error: '+res.error.message,true);
   closeModal('modal-bbm'); loadBBM(); updateDashboard();
 }
@@ -254,7 +254,7 @@ function editBBM(i) {
 }
 async function delBBM(i) {
   if(!confirm('Hapus data BBM ini?'))return;
-  var res=await supabase.from('bbm').delete().eq('id',DB.bbm[i].id);
+  var res=await db.from('bbm').delete().eq('id',DB.bbm[i].id);
   if(res.error)return toast('Gagal hapus: '+res.error.message,true);
   toast('Data BBM dihapus.');loadBBM();updateDashboard();
 }
@@ -274,7 +274,7 @@ function calcOps() {
 }
 async function loadOps() {
   setLoading('tbody-ops',17);
-  var r=await supabase.from('operasional').select('*').order('tgl',{ascending:false});
+  var r=await db.from('operasional').select('*').order('tgl',{ascending:false});
   if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
   DB.ops=r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
   renderOps();
@@ -288,8 +288,8 @@ async function saveOps() {
   if(jm&&ja){var p=jm.split(':'),q=ja.split(':');var d=(parseInt(q[0])*60+parseInt(q[1]))-(parseInt(p[0])*60+parseInt(p[1]));if(d<0)d+=1440;kmTempuh=d;if(bbmVal>0)ratio=parseFloat((d/(bbmVal/6800)).toFixed(2));}
   var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('ops-jalur').value,nopol:document.getElementById('ops-nopol').value,jam_mulai:jm||null,jam_akhir:ja||null,km_awal_pool:parseFloat(document.getElementById('ops-km-awal-pool').value)||null,km_akhir_pool:parseFloat(document.getElementById('ops-km-akhir-pool').value)||null,km_awal_halte:parseFloat(document.getElementById('ops-km-awal-halte').value)||null,km_akhir_halte:parseFloat(document.getElementById('ops-km-akhir-halte').value)||null,bbm_rp:bbmVal,rit:parseInt(document.getElementById('ops-rit').value)||0,km_tempuh:kmTempuh,ratio:ratio,ket:document.getElementById('ops-ket').value};
   var res;
-  if(editIdx.ops>=0){res=await supabase.from('operasional').update(row).eq('id',DB.ops[editIdx.ops].id);if(!res.error)toast('Data operasional diperbarui!');}
-  else{row.id='OPS'+String(Date.now()).slice(-6);res=await supabase.from('operasional').insert(row);if(!res.error)toast('Data operasional disimpan!');}
+  if(editIdx.ops>=0){res=await db.from('operasional').update(row).eq('id',DB.ops[editIdx.ops].id);if(!res.error)toast('Data operasional diperbarui!');}
+  else{row.id='OPS'+String(Date.now()).slice(-6);res=await db.from('operasional').insert(row);if(!res.error)toast('Data operasional disimpan!');}
   if(res.error)return toast('Error: '+res.error.message,true);
   closeModal('modal-ops');loadOps();updateDashboard();
 }
@@ -311,7 +311,7 @@ function editOps(i) {
 }
 async function delOps(i) {
   if(!confirm('Hapus data operasional ini?'))return;
-  var res=await supabase.from('operasional').delete().eq('id',DB.ops[i].id);
+  var res=await db.from('operasional').delete().eq('id',DB.ops[i].id);
   if(res.error)return toast('Gagal hapus: '+res.error.message,true);
   toast('Data operasional dihapus.');loadOps();updateDashboard();
 }
@@ -403,7 +403,7 @@ async function importData(type, input) {
       else if(type==='ops')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){var bbmV=parseFloat(r['BBM (Rp)']||0),jm=r['Jam Mulai Pool']||null,ja=r['Jam Akhir Pool']||null,km=null,rat=null;if(jm&&ja){var p=jm.split(':'),q=ja.split(':');var d=(parseInt(q[0])*60+parseInt(q[1]))-(parseInt(p[0])*60+parseInt(p[1]));if(d<0)d+=1440;km=d;if(bbmV>0)rat=parseFloat((d/(bbmV/6800)).toFixed(2));}return{id:'OPS'+String(Date.now()+Math.random()*999|0).slice(-6),tgl:r.Tanggal||r.tgl,lambung:r.Lambung||'',jalur:r.Jalur||'',nopol:r['No Polisi']||'',jam_mulai:jm,jam_akhir:ja,km_awal_pool:r['Km Awal Pool']||null,km_akhir_pool:r['Km Akhir Pool']||null,km_awal_halte:r['Km Awal Halte']||null,km_akhir_halte:r['Km Akhir Halte']||null,bbm_rp:bbmV,rit:parseInt(r.RIT||0),km_tempuh:km,ratio:rat,ket:r.Keterangan||''};});
       if(!records.length)return toast('Tidak ada data valid!',true);
       var tbl=type==='ops'?'operasional':type;var inserted=0;
-      for(var i=0;i<records.length;i+=100){var res=await supabase.from(tbl).insert(records.slice(i,i+100));if(res.error){toast('Error: '+res.error.message,true);return;}inserted+=Math.min(100,records.length-i);}
+      for(var i=0;i<records.length;i+=100){var res=await db.from(tbl).insert(records.slice(i,i+100));if(res.error){toast('Error: '+res.error.message,true);return;}inserted+=Math.min(100,records.length-i);}
       input.value='';
       if(type==='bus')await loadBus();if(type==='spbu')await loadSpbu();if(type==='bbm')await loadBBM();if(type==='ops')await loadOps();
       updateDashboard();toast('✅ Import '+inserted+' data berhasil!');
@@ -457,23 +457,23 @@ function previewFoto(input,previewId) {
 // ============================================================
 async function updateDashboard() {
   var results=await Promise.all([
-    supabase.from('bus').select('id',{count:'exact',head:true}),
-    supabase.from('spbu').select('id',{count:'exact',head:true}),
-    supabase.from('bbm').select('id',{count:'exact',head:true}),
-    supabase.from('operasional').select('id',{count:'exact',head:true})
+    db.from('bus').select('id',{count:'exact',head:true}),
+    db.from('spbu').select('id',{count:'exact',head:true}),
+    db.from('bbm').select('id',{count:'exact',head:true}),
+    db.from('operasional').select('id',{count:'exact',head:true})
   ]);
   document.getElementById('stat-bus').textContent=results[0].count||0;
   document.getElementById('stat-bbm').textContent=results[2].count||0;
   document.getElementById('stat-ops').textContent=results[3].count||0;
   document.getElementById('stat-spbu').textContent=results[1].count||0;
   document.getElementById('banner-bus').textContent=results[0].count||0;
-  var aktif=await supabase.from('spbu').select('id',{count:'exact',head:true}).eq('aktif',true);
+  var aktif=await db.from('spbu').select('id',{count:'exact',head:true}).eq('aktif',true);
   document.getElementById('banner-spbu').textContent=aktif.count||0;
   var today=new Date().toISOString().split('T')[0];
-  var todayOps=await supabase.from('operasional').select('id',{count:'exact',head:true}).eq('tgl',today);
+  var todayOps=await db.from('operasional').select('id',{count:'exact',head:true}).eq('tgl',today);
   document.getElementById('banner-ops').textContent=todayOps.count||0;
   var days=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
-  var bbm7=await supabase.from('bbm').select('tgl').gte('tgl',days[0]);
+  var bbm7=await db.from('bbm').select('tgl').gte('tgl',days[0]);
   var chart=document.getElementById('chart-bbm');
   if(bbm7.data&&bbm7.data.length){
     var cnts=days.map(function(d){return bbm7.data.filter(function(r){return r.tgl===d;}).length;});
@@ -483,8 +483,8 @@ async function updateDashboard() {
     chart.innerHTML='<div style="display:flex;align-items:center;justify-content:center;width:100%;color:var(--gray-400);font-size:13px;">Belum ada data BBM</div>';
   }
   var acts=await Promise.all([
-    supabase.from('bbm').select('lambung,nominal,created_at').order('created_at',{ascending:false}).limit(5),
-    supabase.from('operasional').select('lambung,tgl,created_at').order('created_at',{ascending:false}).limit(5)
+    db.from('bbm').select('lambung,nominal,created_at').order('created_at',{ascending:false}).limit(5),
+    db.from('operasional').select('lambung,tgl,created_at').order('created_at',{ascending:false}).limit(5)
   ]);
   var actList=[].concat(
     (acts[0].data||[]).map(function(r){return{icon:'⛽',title:'BBM '+r.lambung,meta:'Rp '+Number(r.nominal).toLocaleString(),time:new Date(r.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})};})
