@@ -6,9 +6,35 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============ STATE ============
-let DB = { bus: [], spbu: [], bbm: [], ops: [] };
-let editIdx = { bus: -1, spbu: -1, bbm: -1, ops: -1 };
+let DB = { bus: [], spbu: [], bbm: [], ops: [], akun: [] };
+let editIdx = { bus: -1, spbu: -1, bbm: -1, ops: -1, akun: -1 };
 let sidebarOpen = false;
+let currentUser = null; // { id, nama, username, role, perms }
+
+// Semua menu dan aksi yang bisa dikonfigurasi
+const ALL_MENUS = [
+  { key:'dashboard',     label:'Dashboard' },
+  { key:'data-bus',      label:'Data Bus' },
+  { key:'data-spbu',     label:'Data SPBU' },
+  { key:'input-bbm',     label:'Input BBM' },
+  { key:'input-ops',     label:'Input Operasional' },
+  { key:'lap-bbm-waktu', label:'Laporan Waktu BBM' },
+  { key:'lap-bbm',       label:'Laporan BBM' },
+  { key:'lap-ops',       label:'Laporan Operasional' },
+];
+const ALL_ACTIONS = [
+  { key:'tambah', label:'Tambah' },
+  { key:'edit',   label:'Edit' },
+  { key:'hapus',  label:'Hapus' },
+  { key:'import', label:'Import' },
+  { key:'export', label:'Export' },
+];
+// Default permissions per role
+function defaultPerms(role) {
+  if (role === 'admin') return { menus: ALL_MENUS.map(m=>m.key), actions: ALL_ACTIONS.map(a=>a.key) };
+  if (role === 'staf')  return { menus: ['dashboard','input-bbm','input-ops','lap-bbm','lap-ops','lap-bbm-waktu'], actions: ['tambah','edit','export'] };
+  return { menus: ['dashboard','lap-bbm','lap-ops'], actions: ['export'] }; // guest
+}
 
 // ============ SIDEBAR ============
 function toggleSidebar() {
@@ -48,9 +74,14 @@ const pageTitles = {
   'input-ops':     'Input Operasional',
   'lap-bbm-waktu': 'Laporan Waktu Pengisian BBM',
   'lap-bbm':       'Laporan BBM',
-  'lap-ops':       'Laporan Operasional'
+  'lap-ops':       'Laporan Operasional',
+  'kelola-akun':   'Kelola Akun'
 };
 function goPage(id) {
+  // Cek izin akses halaman
+  if (currentUser && currentUser.role !== 'admin' && !currentUser.perms.menus.includes(id)) {
+    return toast('Anda tidak punya akses ke menu ini.', true);
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
@@ -65,8 +96,197 @@ function goPage(id) {
   if (id === 'lap-bbm-waktu') populateSpbuFilter();
   if (id === 'lap-bbm')       populateLambFilter('lb-lamb');
   if (id === 'lap-ops')       populateLambFilter('lo-lamb');
+  if (id === 'kelola-akun')   loadAkun();
   // tutup sidebar di mobile setelah navigasi
   if (window.innerWidth <= 900 && sidebarOpen) { sidebarOpen = false; applySidebarState(); }
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function canDo(action) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'admin') return true;
+  return currentUser.perms.actions.includes(action);
+}
+function canAccess(menu) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'admin') return true;
+  return currentUser.perms.menus.includes(menu);
+}
+
+async function doLogin() {
+  var username = document.getElementById('login-username').value.trim().toLowerCase();
+  var password = document.getElementById('login-password').value;
+  var errEl    = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Username dan password wajib diisi.'; return; }
+
+  // Cek ke tabel akun di Supabase
+  var r = await db.from('akun').select('*').eq('username', username).single();
+  if (r.error || !r.data) { errEl.textContent = 'Username tidak ditemukan.'; return; }
+  var user = r.data;
+  // Password disimpan plaintext (bisa diganti bcrypt jika pakai edge function)
+  if (user.password !== password) { errEl.textContent = 'Password salah.'; return; }
+
+  currentUser = {
+    id: user.id, nama: user.nama, username: user.username,
+    role: user.role,
+    perms: user.perms || defaultPerms(user.role)
+  };
+  // Simpan session di sessionStorage
+  sessionStorage.setItem('tjUser', JSON.stringify(currentUser));
+  applyUserSession();
+}
+
+function applyUserSession() {
+  if (!currentUser) return;
+  // Sembunyikan login
+  document.getElementById('login-screen').style.display = 'none';
+  // Update sidebar user info
+  document.getElementById('sidebar-username').textContent = currentUser.nama;
+  document.getElementById('sidebar-role').textContent = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
+  document.getElementById('sidebar-avatar').textContent = currentUser.nama.charAt(0).toUpperCase();
+  // Tampilkan menu Kelola Akun hanya untuk admin
+  document.getElementById('sidebar-akun').style.display = currentUser.role==='admin' ? '' : 'none';
+  // Sembunyikan nav item yang tidak punya akses
+  document.querySelectorAll('[data-page]').forEach(function(btn){
+    var page = btn.getAttribute('data-page');
+    if (page === 'kelola-akun') return;
+    btn.style.display = canAccess(page) ? '' : 'none';
+  });
+  // Sembunyikan tombol aksi berdasarkan permission
+  applyActionPerms();
+  // Load data awal
+  loadBus().catch(function(e){ console.error(e); });
+  loadSpbu().catch(function(e){ console.error(e); });
+  updateDashboard().catch(function(e){ console.error(e); });
+}
+
+function applyActionPerms() {
+  // Tombol tambah/import/export berdasarkan izin
+  var addBtns    = ['btn-tambah-bus','btn-tambah-spbu','btn-tambah-bbm','btn-tambah-ops','btn-tambah-akun'];
+  var importBtns = document.querySelectorAll('[data-perm="import"]');
+  var exportBtns = document.querySelectorAll('[data-perm="export"]');
+  addBtns.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display = canDo('tambah') ? '' : 'none';
+  });
+  importBtns.forEach(function(el){ el.style.display = canDo('import') ? '' : 'none'; });
+  exportBtns.forEach(function(el){ el.style.display = canDo('export') ? '' : 'none'; });
+}
+
+function doLogout() {
+  sessionStorage.removeItem('tjUser');
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+// ============================================================
+// KELOLA AKUN
+// ============================================================
+async function loadAkun() {
+  var r = await db.from('akun').select('id,nama,username,role,perms,created_at').order('created_at');
+  if (r.error) return toast('Gagal memuat akun: '+r.error.message, true);
+  DB.akun = r.data;
+  renderAkun();
+}
+function renderAkun() {
+  var tbody = document.getElementById('tbody-akun');
+  if (!tbody) return;
+  if (!DB.akun.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-users"></i><p>Belum ada akun</p></div></td></tr>'; return; }
+  tbody.innerHTML = DB.akun.map(function(r,i){
+    var perms = r.perms || defaultPerms(r.role);
+    var menuList = (perms.menus||[]).map(function(k){
+      var m=ALL_MENUS.find(function(x){return x.key===k;});
+      return m?m.label:'';
+    }).filter(Boolean).join(', ') || '—';
+    var roleBadge = '<span class="badge-role-'+r.role+'">'+r.role.charAt(0).toUpperCase()+r.role.slice(1)+'</span>';
+    var isMe = currentUser && currentUser.id === r.id;
+    return '<tr>'
+      +'<td style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
+      +'<td><strong>'+r.nama+'</strong>'+(isMe?' <span style="font-size:10px;color:var(--green-main);">(Anda)</span>':'')+'</td>'
+      +'<td><code style="background:var(--gray-100);padding:2px 8px;border-radius:6px;">'+r.username+'</code></td>'
+      +'<td>'+roleBadge+'</td>'
+      +'<td style="font-size:11.5px;color:var(--gray-600);max-width:200px;">'+menuList+'</td>'
+      +'<td><div class="action-btns">'
+      +(canDo('edit')?'<button class="btn btn-outline btn-sm" onclick="editAkun('+i+')"><i class="fas fa-edit"></i></button>':'')
+      +(canDo('hapus')&&!isMe?'<button class="btn btn-danger btn-sm" onclick="delAkun('+i+')"><i class="fas fa-trash"></i></button>':'')
+      +'</div></td></tr>';
+  }).join('');
+}
+function renderPermGrid() {
+  var role = document.getElementById('akun-role').value;
+  var def  = defaultPerms(role);
+  var grid = document.getElementById('perm-grid');
+  var html = '<div class="perm-section-title" style="grid-column:1/-1">Menu yang Dapat Diakses</div>';
+  ALL_MENUS.forEach(function(m){
+    var chk = def.menus.includes(m.key) ? 'checked' : '';
+    html += '<label class="perm-item"><input type="checkbox" class="perm-menu" value="'+m.key+'" '+chk+'> '+m.label+'</label>';
+  });
+  html += '<div class="perm-section-title" style="grid-column:1/-1">Aksi yang Diizinkan</div>';
+  ALL_ACTIONS.forEach(function(a){
+    var chk = def.actions.includes(a.key) ? 'checked' : '';
+    html += '<label class="perm-item"><input type="checkbox" class="perm-action" value="'+a.key+'" '+chk+'> '+a.label+'</label>';
+  });
+  grid.innerHTML = html;
+}
+function getPermFromForm() {
+  var menus = [], actions = [];
+  document.querySelectorAll('.perm-menu:checked').forEach(function(el){ menus.push(el.value); });
+  document.querySelectorAll('.perm-action:checked').forEach(function(el){ actions.push(el.value); });
+  return { menus: menus, actions: actions };
+}
+async function saveAkun() {
+  var nama     = document.getElementById('akun-nama').value.trim();
+  var username = document.getElementById('akun-username').value.trim().toLowerCase();
+  var password = document.getElementById('akun-password').value;
+  var role     = document.getElementById('akun-role').value;
+  if (!nama || !username) return toast('Nama dan username wajib diisi!', true);
+  if (editIdx.akun < 0 && !password) return toast('Password wajib diisi untuk akun baru!', true);
+  var perms = getPermFromForm();
+  var row = { nama:nama, username:username, role:role, perms:perms };
+  if (password) row.password = password;
+  var res;
+  if (editIdx.akun >= 0) {
+    res = await db.from('akun').update(row).eq('id', DB.akun[editIdx.akun].id);
+    if (!res.error) toast('Akun diperbarui!');
+  } else {
+    res = await db.from('akun').insert(row);
+    if (!res.error) toast('Akun berhasil dibuat!');
+  }
+  if (res.error) return toast('Error: '+res.error.message, true);
+  closeModal('modal-akun'); loadAkun();
+}
+function editAkun(i) {
+  if (!canDo('edit')) return toast('Tidak ada izin edit.', true);
+  editIdx.akun = i;
+  var r = DB.akun[i];
+  document.getElementById('akun-nama').value     = r.nama;
+  document.getElementById('akun-username').value = r.username;
+  document.getElementById('akun-password').value = '';
+  document.getElementById('akun-role').value     = r.role;
+  // Load perms dari data atau default
+  var perms = r.perms || defaultPerms(r.role);
+  renderPermGrid();
+  // Override checkbox sesuai data tersimpan
+  setTimeout(function(){
+    document.querySelectorAll('.perm-menu').forEach(function(el){ el.checked = perms.menus.includes(el.value); });
+    document.querySelectorAll('.perm-action').forEach(function(el){ el.checked = perms.actions.includes(el.value); });
+  }, 50);
+  document.getElementById('modal-akun-title').textContent = 'Edit Akun';
+  document.getElementById('akun-password').placeholder = 'Kosongkan jika tidak diubah';
+  openModal('modal-akun');
+}
+async function delAkun(i) {
+  if (!canDo('hapus')) return toast('Tidak ada izin hapus.', true);
+  if (!confirm('Hapus akun '+DB.akun[i].nama+'?')) return;
+  var res = await db.from('akun').delete().eq('id', DB.akun[i].id);
+  if (res.error) return toast('Gagal hapus: '+res.error.message, true);
+  toast('Akun dihapus.'); loadAkun();
 }
 
 function setDateNow() {
@@ -612,7 +832,17 @@ document.querySelectorAll('.modal-overlay').forEach(function(m) {
   m.addEventListener('click', function(e) { if (e.target === m) closeModal(m.id); });
 });
 
-// load data awal — independent, error satu tidak hentikan yang lain
-loadBus().catch(function(e){ console.error('loadBus error:', e); });
-loadSpbu().catch(function(e){ console.error('loadSpbu error:', e); });
-updateDashboard().catch(function(e){ console.error('dashboard error:', e); });
+// Render perm grid saat modal akun dibuka
+document.getElementById('modal-akun').addEventListener('transitionend', function(){
+  if(this.classList.contains('open') && editIdx.akun < 0) renderPermGrid();
+});
+
+// Cek session login
+var savedUser = sessionStorage.getItem('tjUser');
+if (savedUser) {
+  try {
+    currentUser = JSON.parse(savedUser);
+    applyUserSession();
+  } catch(e) { sessionStorage.removeItem('tjUser'); }
+}
+// Jika tidak ada session, login screen tetap tampil
