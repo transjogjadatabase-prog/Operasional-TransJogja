@@ -215,7 +215,8 @@ body {
 .search-box i { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--gray-400); font-size:13px; }
 .table-actions { display:flex; gap:8px; flex-wrap:wrap; }
 
-.table-wrap { overflow-x:auto; border-radius:var(--radius-sm); border:1px solid var(--gray-200); }
+.table-wrap { overflow-x:auto; overflow-y:auto; max-height:520px; border-radius:var(--radius-sm); border:1px solid var(--gray-200); }
+.table-wrap thead th { position:sticky; top:0; z-index:2; background:var(--green-dark); color:white; }
 table { width:100%; border-collapse:collapse; font-size:13px; }
 thead { background:var(--green-dark); }
 thead th { padding:13px 14px; text-align:left; color:white; font-weight:600; font-size:12px; letter-spacing:0.5px; white-space:nowrap; font-family: var(--font-body); }
@@ -342,3 +343,45 @@ textarea { resize:vertical; min-height:80px; }
   .content { padding: 20px 16px; }
   .topbar { padding: 14px 16px; }
 }
+
+
+/* ========== LOGIN SCREEN ========== */
+#login-screen {
+  position:fixed; inset:0; background:linear-gradient(135deg,var(--green-dark) 0%,#0a2a12 100%);
+  display:flex; align-items:center; justify-content:center; z-index:9999;
+}
+.login-box {
+  background:#fff; border-radius:24px; padding:48px 40px; width:100%; max-width:400px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.3); text-align:center;
+}
+.login-logo { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:28px; }
+.login-logo img { width:56px; height:56px; object-fit:contain; border-radius:12px; }
+.login-logo-text .title { font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--green-dark); }
+.login-logo-text .sub { font-size:11px; color:var(--gray-400); letter-spacing:1.5px; text-transform:uppercase; }
+.login-box h2 { font-size:17px; color:var(--gray-600); margin-bottom:24px; font-weight:500; }
+.login-box .form-group { margin-bottom:16px; text-align:left; }
+.login-box label { font-size:12px; font-weight:600; color:var(--gray-600); margin-bottom:5px; display:block; }
+.login-box input { width:100%; padding:11px 14px; border:1.5px solid var(--gray-200); border-radius:10px; font-size:14px; transition:border 0.2s; }
+.login-box input:focus { outline:none; border-color:var(--green-main); }
+.login-btn { width:100%; padding:13px; background:var(--green-dark); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; margin-top:8px; transition:background 0.2s; }
+.login-btn:hover { background:var(--green-main); }
+.login-error { color:#e53e3e; font-size:13px; margin-top:10px; min-height:18px; }
+
+/* ========== ROLE BADGE ========== */
+.badge-role-admin  { background:#ffeeba; color:#856404; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+.badge-role-staf   { background:#d4edda; color:#155724; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+.badge-role-guest  { background:#e2e3e5; color:#383d41; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+
+/* ========== PERMISSION TOGGLE ========== */
+.perm-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+.perm-item { display:flex; align-items:center; gap:8px; background:var(--gray-100); border-radius:8px; padding:8px 10px; font-size:12px; }
+.perm-item input[type=checkbox] { accent-color:var(--green-main); width:15px; height:15px; }
+.perm-section-title { font-size:11px; font-weight:700; color:var(--gray-400); letter-spacing:1px; text-transform:uppercase; margin:12px 0 4px; }
+
+/* ========== AKUN MENU SIDEBAR ========== */
+.sidebar-footer .logout-btn {
+  width:100%; padding:9px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+  color:rgba(255,255,255,0.7); border-radius:10px; font-size:13px; cursor:pointer; margin-top:8px;
+  transition:background 0.2s;
+}
+.sidebar-footer .logout-btn:hover { background:rgba(255,255,255,0.16); color:#fff; }
