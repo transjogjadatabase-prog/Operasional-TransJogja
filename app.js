@@ -1,8 +1,8 @@
 // ============================================================
 // SUPABASE CONFIG — ganti URL dan KEY dengan milik Anda
 // ============================================================
-const SUPABASE_URL      = 'https://rzmeitgcbcpctisxsxpq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6bWVpdGdjYmNwY3Rpc3hzeHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzU0NTIsImV4cCI6MjA4ODYxMTQ1Mn0.NJivuuKmq48in32Ruk5hcf5F3LbNa2jL8yjD8GVClj4';
+const SUPABASE_URL      = 'https://XXXXXXXXXXXX.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============ STATE ============
@@ -167,13 +167,13 @@ async function loadSpbu() {
   setLoading('tbody-spbu', 6);
   var r = await db.from('spbu').select('*').order('created_at', { ascending: false });
   if (r.error) return toast('Gagal memuat SPBU: ' + r.error.message, true);
-  DB.spbu = r.data.map(function(d) { return { id:d.id, nama:d.nama, alamat:d.alamat, hp:d.hp, aktif:d.aktif }; });
+  DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode, nama:d.nama, alamat:d.alamat, hp:d.hp, aktif:d.aktif }; });
   renderSpbu(); populateSpbuDropdowns();
 }
 async function saveSpbu() {
   var nama = document.getElementById('spbu-nama').value.trim();
   if (!nama) return toast('Nama SPBU wajib diisi!', true);
-  var row = { nama:nama, alamat:document.getElementById('spbu-alamat').value, hp:document.getElementById('spbu-hp').value, aktif:document.getElementById('spbu-status').value==='1' };
+  var row = { kode:document.getElementById('spbu-kode').value.trim(), nama:nama, alamat:document.getElementById('spbu-alamat').value, hp:document.getElementById('spbu-hp').value, aktif:document.getElementById('spbu-status').value==='1' };
   var res;
   if (editIdx.spbu >= 0) { res = await db.from('spbu').update(row).eq('id', DB.spbu[editIdx.spbu].id); if (!res.error) toast('Data SPBU diperbarui!'); }
   else { res = await db.from('spbu').insert(row); if (!res.error) toast('Data SPBU disimpan!'); }
@@ -184,11 +184,10 @@ function renderSpbu() {
   var tbody = document.getElementById('tbody-spbu');
   if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
   tbody.innerHTML = DB.spbu.map(function(r, i) {
-    var shortId = r.id ? r.id.split('-')[0].toUpperCase() : '-';
     return '<tr>'
       + '<td style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td>'
       + '<td><strong>' + r.nama + '</strong></td>'
-      + '<td><span style="font-family:monospace;font-size:11px;background:var(--green-pale);color:var(--green-dark);padding:3px 8px;border-radius:6px;font-weight:600;">' + shortId + '</span></td>'
+      + '<td><span style="font-family:monospace;font-size:12px;background:var(--green-pale);color:var(--green-dark);padding:3px 10px;border-radius:6px;font-weight:700;">' + (r.kode||'—') + '</span></td>'
       + '<td>' + (r.alamat||'-') + '</td>'
       + '<td>' + (r.hp||'-') + '</td>'
       + '<td><span class="badge-status ' + (r.aktif?'badge-aktif':'badge-nonaktif') + '">' + (r.aktif?'Aktif':'Tidak Aktif') + '</span></td>'
@@ -198,8 +197,9 @@ function renderSpbu() {
 }
 function editSpbu(i) {
   editIdx.spbu = i; var r = DB.spbu[i];
-  document.getElementById('spbu-nama').value = r.nama; document.getElementById('spbu-alamat').value = r.alamat||'';
-  document.getElementById('spbu-hp').value = r.hp||''; document.getElementById('spbu-status').value = r.aktif?'1':'0';
+  document.getElementById('spbu-nama').value = r.nama; document.getElementById('spbu-kode').value = r.kode||'';
+  document.getElementById('spbu-alamat').value = r.alamat||''; document.getElementById('spbu-hp').value = r.hp||'';
+  document.getElementById('spbu-status').value = r.aktif?'1':'0';
   document.getElementById('modal-spbu-title').textContent = 'Edit Data SPBU'; openModal('modal-spbu');
 }
 async function delSpbu(i) {
@@ -390,7 +390,7 @@ function generateLapOps() {
 function downloadTemplate(type) {
   var headers=[],sampleRows=[],filename='';
   if(type==='bus'){headers=['Lambung','No Polisi','Jalur','Tipe Bus','Karoseri','Warna Bus','Keterangan'];sampleRows=[['AB-001','AB 1234 CD','Koridor 1','Besar','Laksana','Hijau',''],['AB-002','AB 5678 EF','Koridor 2','Sedang','Adiputro','Putih','']];filename='Template_Bus.xlsx';}
-  else if(type==='spbu'){headers=['Nama SPBU','Alamat','No Hp','Status'];sampleRows=[['SPBU Jl. Magelang','Jl. Magelang No.10','081234567890','Aktif']];filename='Template_SPBU.xlsx';}
+  else if(type==='spbu'){headers=['Nama SPBU','ID SPBU','Alamat','No Hp','Status'];sampleRows=[['SPBU Jl. Magelang','34-151-01','Jl. Magelang No.10','081234567890','Aktif']];filename='Template_SPBU.xlsx';}
   else if(type==='bbm'){headers=['Tanggal','Lambung','Jalur','No Polisi','Waktu Pengisian','Nominal','SPBU','Halte Terakhir','Jam Halte Terakhir','Keterangan'];sampleRows=[['2026-03-09','AB-001','Koridor 1','AB 1234 CD','06:30','200000','SPBU Jl. Magelang','Halte Malioboro','06:15','']];filename='Template_BBM.xlsx';}
   else if(type==='ops'){headers=['Tanggal','Lambung','Jalur','No Polisi','Jam Mulai Pool','Jam Akhir Pool','Km Awal Pool','Km Akhir Pool','Km Awal Halte','Km Akhir Halte','BBM (Rp)','RIT','Keterangan'];sampleRows=[['2026-03-09','AB-001','Koridor 1','AB 1234 CD','05:30','22:00','12500','12620','12510','12610','200000','8','']];filename='Template_Operasional.xlsx';}
   var ws=XLSX.utils.aoa_to_sheet([headers].concat(sampleRows));
@@ -408,7 +408,7 @@ async function importData(type, input) {
       var records=[];
       // IDs generated by Supabase
       if(type==='bus')records=rows.filter(function(r){return r.Lambung||r.lambung;}).map(function(r){return{lambung:r.Lambung||r.lambung,nopol:r['No Polisi']||r.nopol||'',jalur:r.Jalur||r.jalur||'',tipe:r['Tipe Bus']||r.tipe||'',karoseri:r.Karoseri||r.karoseri||'',warna:r['Warna Bus']||r.warna||'',ket:r.Keterangan||r.ket||''};});
-      else if(type==='spbu')records=rows.filter(function(r){return r['Nama SPBU']||r.nama;}).map(function(r){return{nama:r['Nama SPBU']||r.nama,alamat:r.Alamat||r.alamat||'',hp:r['No Hp']||r.hp||'',aktif:String(r.Status||'1').toLowerCase()==='aktif'||String(r.Status||'1')==='1'};});
+      else if(type==='spbu')records=rows.filter(function(r){return r['Nama SPBU']||r.nama;}).map(function(r){return{kode:r['ID SPBU']||r.kode||'',nama:r['Nama SPBU']||r.nama,alamat:r.Alamat||r.alamat||'',hp:r['No Hp']||r.hp||'',aktif:String(r.Status||'1').toLowerCase()==='aktif'||String(r.Status||'1')==='1'};});
       else if(type==='bbm')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){return{tgl:r.Tanggal||r.tgl,lambung:r.Lambung||r.lambung||'',jalur:r.Jalur||r.jalur||'',nopol:r['No Polisi']||r.nopol||'',waktu:r['Waktu Pengisian']||r.waktu||null,nominal:parseFloat(r.Nominal||r.nominal||0),spbu:r.SPBU||r.spbu||'',halte:r['Halte Terakhir']||r.halte||'',jam_halte:r['Jam Halte Terakhir']||null,ket:r.Keterangan||r.ket||''};});
       else if(type==='ops')records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){var bbmV=parseFloat(r['BBM (Rp)']||0),jm=r['Jam Mulai Pool']||null,ja=r['Jam Akhir Pool']||null,km=null,rat=null;if(jm&&ja){var p=jm.split(':'),q=ja.split(':');var d=(parseInt(q[0])*60+parseInt(q[1]))-(parseInt(p[0])*60+parseInt(p[1]));if(d<0)d+=1440;km=d;if(bbmV>0)rat=parseFloat((d/(bbmV/6800)).toFixed(2));}return{tgl:r.Tanggal||r.tgl,lambung:r.Lambung||'',jalur:r.Jalur||'',nopol:r['No Polisi']||'',jam_mulai:jm,jam_akhir:ja,km_awal_pool:r['Km Awal Pool']||null,km_akhir_pool:r['Km Akhir Pool']||null,km_awal_halte:r['Km Awal Halte']||null,km_akhir_halte:r['Km Akhir Halte']||null,bbm_rp:bbmV,rit:parseInt(r.RIT||0),km_tempuh:km,ratio:rat,ket:r.Keterangan||''};});
       if(!records.length)return toast('Tidak ada data valid!',true);
@@ -429,7 +429,7 @@ async function importData(type, input) {
 function exportExcel(type) {
   var data=[],fn='';
   if(type==='bus'){data=DB.bus.map(function(r){return{ID:r.id,Lambung:r.lambung,'No Polisi':r.nopol,Jalur:r.jalur,'Tipe Bus':r.tipe,Karoseri:r.karoseri,'Warna Bus':r.warna,Keterangan:r.ket};});fn='DataBus.xlsx';}
-  if(type==='spbu'){data=DB.spbu.map(function(r){return{ID:r.id,'Nama SPBU':r.nama,Alamat:r.alamat,'No Hp':r.hp,Status:r.aktif?'Aktif':'Tidak Aktif'};});fn='DataSPBU.xlsx';}
+  if(type==='spbu'){data=DB.spbu.map(function(r){return{'Nama SPBU':r.nama,'ID SPBU':r.kode||'',Alamat:r.alamat,'No Hp':r.hp,Status:r.aktif?'Aktif':'Tidak Aktif'};});fn='DataSPBU.xlsx';}
   if(type==='bbm'){data=DB.bbm.map(function(r){return{ID:r.id,Tanggal:r.tgl,Lambung:r.lambung,Jalur:r.jalur,'No Polisi':r.nopol,Waktu:r.waktu,Nominal:r.nominal,SPBU:r.spbu,Halte:r.halte,Keterangan:r.ket};});fn='DataBBM.xlsx';}
   if(type==='ops'){data=DB.ops.map(function(r){return{ID:r.id,Tanggal:r.tgl,Lambung:r.lambung,Jalur:r.jalur,'No Polisi':r.nopol,'Jam Mulai':r.jamMulai,'Jam Akhir':r.jamAkhir,'BBM(Rp)':r.bbm,RIT:r.rit,'Km Tempuh':r.kmTempuh,Ratio:r.ratio,Keterangan:r.ket};});fn='DataOperasional.xlsx';}
   if(!data.length)return toast('Tidak ada data!',true);
