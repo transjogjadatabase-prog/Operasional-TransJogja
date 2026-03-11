@@ -221,10 +221,7 @@ body {
 .table-actions { display:flex; gap:8px; flex-wrap:wrap; }
 
 
-.table-wrap thead th { position:sticky; top:0; z-index:2; background:var(--green-dark); color:white; }
-table { border-collapse:collapse; font-size:13px; }
 thead { background:var(--green-dark); }
-thead th { padding:13px 14px; text-align:left; color:white; font-weight:600; font-size:12px; letter-spacing:0.5px; white-space:nowrap; font-family: var(--font-body); }
 tbody tr { transition:background 0.15s; border-bottom:1px solid var(--gray-100); }
 tbody tr:hover { background:var(--green-pale); }
 tbody td { padding:11px 14px; color:var(--gray-600); vertical-align:middle; }
@@ -414,61 +411,56 @@ tr.selected-row { background:#f0faf2 !important; }
 
 
 
-/* ===== FREEZE KOLOM ===== */
 
+/* ===== TABLE ===== */
+table { font-size:13px; border-collapse:collapse; }
+thead th { 
+  padding:13px 14px; text-align:left; color:white; font-weight:600; 
+  font-size:12px; letter-spacing:0.5px; font-family:var(--font-body);
+  background:var(--green-dark);
+}
+tbody td { padding:12px 14px; border-bottom:1px solid var(--gray-200); vertical-align:middle; }
+tbody tr:nth-child(even) { background:#f9fafb; }
+tbody tr:hover { background:#f0faf2; }
 
-
-/* ===== TABLE FREEZE ===== */
-.table-outer,
-.table-wrap {
-  max-height: 520px;
+/* ===== TABLE CONTAINER ===== */
+.table-outer {
   overflow: auto;
+  max-height: 520px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gray-200);
-  position: relative;
   scrollbar-width: thin;
   scrollbar-color: var(--green-main) #e8f5e9;
 }
-.table-outer::-webkit-scrollbar,
-.table-wrap::-webkit-scrollbar { height: 8px; width: 8px; }
-.table-outer::-webkit-scrollbar-track,
-.table-wrap::-webkit-scrollbar-track { background: #e8f5e9; }
-.table-outer::-webkit-scrollbar-thumb,
-.table-wrap::-webkit-scrollbar-thumb { background: var(--green-main); border-radius: 4px; }
+.table-outer::-webkit-scrollbar { height:8px; width:8px; }
+.table-outer::-webkit-scrollbar-track { background:#e8f5e9; }
+.table-outer::-webkit-scrollbar-thumb { background:var(--green-main); border-radius:4px; }
 
-.table-outer table,
-.table-wrap table {
-  border-collapse: collapse !important;
+.table-outer table {
+  border-collapse: collapse;
   white-space: nowrap;
   min-width: 100%;
 }
 
-/* Header sticky top */
-.table-outer thead th,
-.table-wrap thead th {
+/* Freeze header atas */
+.table-outer thead th {
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--green-dark);
-  color: white;
-  padding: 13px 14px;
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.5px;
 }
 
-/* Freeze kolom kiri via JS - class js-freeze */
-.js-freeze {
-  position: sticky;
-  left: 0;
+/* Freeze kolom kiri (diset via JS) */
+.col-freeze {
+  position: sticky !important;
+  left: 0 !important;
   z-index: 2;
-  background: inherit;
+  box-shadow: 3px 0 5px -2px rgba(0,0,0,0.10);
 }
-.js-freeze-head {
-  position: sticky;
-  left: 0;
-  top: 0;
-  z-index: 6 !important;
-  background: var(--green-dark) !important;
-  color: #fff !important;
+.col-freeze-head {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 5 !important;
 }
+tbody tr:nth-child(even) .col-freeze { background: #f9fafb; }
+tbody tr:nth-child(odd) .col-freeze { background: #fff; }
+tbody tr:hover .col-freeze { background: #f0faf2 !important; }
