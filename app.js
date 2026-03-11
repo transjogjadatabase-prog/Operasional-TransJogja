@@ -797,8 +797,41 @@ async function delOps(i) {
 // ============================================================
 // FILTER & LAPORAN
 // ============================================================
-function filterTable(tableId,keyword) {
-  document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(row){row.style.display=row.textContent.toLowerCase().includes(keyword.toLowerCase())?'':'none';});
+function filterTable(tableId, keyword) {
+  var kw = keyword.trim().toLowerCase();
+
+  // Map tabel ke key di DB
+  var keyMap = { 'tbl-bus':'bus', 'tbl-spbu':'spbu', 'tbl-bbm':'bbm', 'tbl-ops':'ops', 'tbl-akun':'akun' };
+  var renderMap = {
+    'tbl-bus':  function(){ renderBus(); },
+    'tbl-spbu': function(){ renderSpbu(); },
+    'tbl-bbm':  function(){ renderBBM(); },
+    'tbl-ops':  function(){ renderOps(); },
+    'tbl-akun': function(){ renderAkun(); }
+  };
+
+  var key = keyMap[tableId];
+  if (!key || !renderMap[tableId]) return;
+
+  var origArr = DB[key];
+
+  if (!kw) {
+    // Kosong: restore semua
+    DB[key] = origArr;
+  } else {
+    // Filter data berdasarkan semua field
+    DB[key] = origArr.filter(function(r) {
+      return Object.values(r).some(function(v) {
+        return v !== null && v !== undefined && String(v).toLowerCase().includes(kw);
+      });
+    });
+  }
+
+  renderMap[tableId]();
+  applyFreeze(tableId);
+
+  // Restore data asli agar operasi lain tidak terganggu
+  DB[key] = origArr;
 }
 function populateSpbuFilter() {
   var sel=document.getElementById('lw-spbu');if(!sel)return;
