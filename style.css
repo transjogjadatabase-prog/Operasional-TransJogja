@@ -420,11 +420,12 @@ tr.selected-row { background:#f0faf2 !important; }
 .table-outer {
   max-height: 520px;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: scroll;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gray-200);
   position: relative;
-  /* scrollbar horizontal selalu tampil */
+  display: block;
+  width: 100%;
   scrollbar-width: thin;
   scrollbar-color: var(--green-main) #e8f5e9;
 }
@@ -440,11 +441,13 @@ tr.selected-row { background:#f0faf2 !important; }
 }
 
 .table-wrap {
-  overflow-x: auto;
+  overflow-x: scroll;
   overflow-y: auto;
   max-height: 520px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gray-200);
+  display: block;
+  width: 100%;
   scrollbar-width: thin;
   scrollbar-color: var(--green-main) #e8f5e9;
 }
@@ -456,6 +459,7 @@ tr.selected-row { background:#f0faf2 !important; }
 .table-outer table {
   border-collapse: separate !important;
   border-spacing: 0;
+  width: max-content;
   min-width: 100%;
 }
 
