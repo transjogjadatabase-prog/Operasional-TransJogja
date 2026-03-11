@@ -1,3 +1,4 @@
+/* v20260311 */
 /* ===== GOOGLE FONTS: Cormorant Garamond (display) + DM Sans (body) ===== */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
@@ -131,11 +132,11 @@ body {
   display: flex;
   flex-direction: column;
   transition: margin-left 0.32s cubic-bezier(0.4,0,0.2,1);
-  width: 100%;
   overflow-x: hidden;
-  box-sizing: border-box;
 }
-.main.sidebar-open { margin-left: var(--sidebar-w); width: calc(100% - var(--sidebar-w)); }
+.main.sidebar-open { 
+  margin-left: var(--sidebar-w);
+}
 
 .topbar {
   background: white; padding: 16px 28px;
@@ -342,8 +343,7 @@ textarea { resize:vertical; min-height:80px; }
 
 /* ========== RESPONSIVE ========== */
 @media(max-width:900px) {
-  .main, .main.sidebar-open { margin-left: 0 !important; }
-  .stats-grid { grid-template-columns:1fr 1fr; }
+    .stats-grid { grid-template-columns:1fr 1fr; }
   .dashboard-grid { grid-template-columns:1fr; }
   .form-grid { grid-template-columns:1fr; }
   .report-summary { grid-template-columns:1fr 1fr; }
