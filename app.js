@@ -863,6 +863,13 @@ function renderBBMRows(rows) {
   return'<div class="table-outer"><table><thead><tr><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal</th><th>SPBU</th><th>Halte</th></tr></thead><tbody>'+rows.map(function(r){return'<tr><td>'+r.tgl+'</td><td>'+r.lambung+'</td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td><td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td></tr>';}).join('')+'</tbody></table></div>';
 }
 function generateLapBBM() {
+  // === DIAGNOSTIC ===
+  var _d98 = DB.bbm.filter(function(r){ return String(r.lambung).trim()==='98'; });
+  console.warn('=== DIAGNOSTIC DB.bbm lambung 98 ===');
+  console.warn('Total records lambung 98:', _d98.length);
+  _d98.forEach(function(r,i){ console.warn(i, '| tgl:', r.tgl, '| nominal:', r.nominal, '| id:', r.id); });
+  console.warn('Total DB.bbm:', DB.bbm.length);
+  // === END DIAGNOSTIC ===
   var tglM=document.getElementById('lb-tgl-mulai').value,tglA=document.getElementById('lb-tgl-akhir').value,lambF=document.getElementById('lb-lamb').value;
   var data=DB.bbm.slice();if(tglM)data=data.filter(function(r){return String(r.tgl).substring(0,10)>=tglM;});if(tglA)data=data.filter(function(r){return String(r.tgl).substring(0,10)<=tglA;});if(lambF)data=data.filter(function(r){return String(r.lambung).trim()===lambF;});
   var el=document.getElementById('result-lap-bbm');
