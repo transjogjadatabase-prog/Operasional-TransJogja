@@ -414,86 +414,68 @@ tr.selected-row { background:#f0faf2 !important; }
 
 /* ===== FREEZE KOLOM ===== */
 
-/* ===== TABLE FREEZE - SCROLL KIRI/KANAN + ATAS/BAWAH ===== */
 
-/* Satu container - overflow keduanya di sini */
+/* ===== TABLE FREEZE ===== */
 .table-outer {
   max-height: 520px;
-  overflow-y: auto;
-  overflow-x: scroll;
+  overflow: auto;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gray-200);
   position: relative;
-  display: block;
-  width: 100%;
   scrollbar-width: thin;
   scrollbar-color: var(--green-main) #e8f5e9;
 }
 .table-outer::-webkit-scrollbar { height: 8px; width: 8px; }
-.table-outer::-webkit-scrollbar-track { background: #e8f5e9; border-radius: 4px; }
+.table-outer::-webkit-scrollbar-track { background: #e8f5e9; }
 .table-outer::-webkit-scrollbar-thumb { background: var(--green-main); border-radius: 4px; }
 
-/* Hapus border table-wrap jika di dalam table-outer */
-.table-outer .table-wrap {
-  border: none;
-  border-radius: 0;
-  overflow: visible;
-}
-
 .table-wrap {
-  overflow-x: scroll;
-  overflow-y: auto;
   max-height: 520px;
+  overflow: auto;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gray-200);
-  display: block;
-  width: 100%;
+  position: relative;
   scrollbar-width: thin;
   scrollbar-color: var(--green-main) #e8f5e9;
 }
 .table-wrap::-webkit-scrollbar { height: 8px; width: 8px; }
-.table-wrap::-webkit-scrollbar-track { background: #e8f5e9; border-radius: 4px; }
+.table-wrap::-webkit-scrollbar-track { background: #e8f5e9; }
 .table-wrap::-webkit-scrollbar-thumb { background: var(--green-main); border-radius: 4px; }
 
-.table-wrap table,
-.table-outer table {
+.table-outer table,
+.table-wrap table {
   border-collapse: separate !important;
   border-spacing: 0;
-  width: max-content;
-  min-width: 100%;
+  white-space: nowrap;
 }
 
-/* Freeze header atas - sticky top */
+/* Freeze header atas */
 .table-outer thead th,
 .table-wrap thead th {
   position: sticky !important;
   top: 0 !important;
-  z-index: 3 !important;
+  z-index: 3;
   background: var(--green-dark) !important;
   color: white !important;
   padding: 13px 14px;
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 0.5px;
-  white-space: nowrap;
 }
 
-/* Freeze kolom kiri - sticky left */
+/* Freeze kolom kiri */
 .freeze-col {
   position: sticky !important;
   left: 0 !important;
-  z-index: 2 !important;
+  z-index: 2;
   background: #fff;
-  box-shadow: 3px 0 5px -1px rgba(0,0,0,0.10);
+  box-shadow: 3px 0 5px -2px rgba(0,0,0,0.12);
 }
-
-/* Freeze pojok kiri atas - sticky top + left */
 thead th.freeze-col {
-  z-index: 6 !important;
+  z-index: 5 !important;
   background: var(--green-dark) !important;
   color: #fff !important;
 }
-
 tbody tr:nth-child(even) .freeze-col { background: #f9fafb; }
 tbody tr:hover .freeze-col { background: #edf7f0 !important; }
 .total-row .freeze-col { background: var(--green-pale) !important; }
