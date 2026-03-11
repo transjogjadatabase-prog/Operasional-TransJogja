@@ -464,3 +464,17 @@ tbody tr:hover { background:#f0faf2; }
 tbody tr:nth-child(even) .col-freeze { background: #f9fafb; }
 tbody tr:nth-child(odd) .col-freeze { background: #fff; }
 tbody tr:hover .col-freeze { background: #f0faf2 !important; }
+
+/* ===== LAPORAN RESULT CONTAINER ===== */
+#result-lap-bbm,
+#result-lap-ops,
+#result-lap-waktu {
+  min-width: 0;
+  overflow: hidden;
+}
+#result-lap-bbm .card,
+#result-lap-ops .card,
+#result-lap-waktu .card {
+  min-width: 0;
+  overflow: hidden;
+}
