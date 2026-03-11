@@ -339,26 +339,13 @@ function applyFreeze(tableId) {
   var tbl = tableId ? document.getElementById(tableId) : null;
   var tables = tbl ? [tbl] : document.querySelectorAll('.table-outer table');
   tables.forEach(function(t) {
-    // Head - freeze th pertama
-    var ths = t.querySelectorAll('thead tr th:first-child');
-    ths.forEach(function(th) {
-      th.style.position = 'sticky';
-      th.style.left = '0';
-      th.style.zIndex = '6';
-      th.style.background = 'var(--green-dark)';
-      th.style.color = '#fff';
-    });
-    // Body - freeze td pertama
-    var rows = t.querySelectorAll('tbody tr, tfoot tr');
-    rows.forEach(function(tr) {
+    // Freeze th pertama (pojok kiri atas)
+    var firstTh = t.querySelector('thead tr th:first-child');
+    if (firstTh) firstTh.classList.add('col-freeze-head');
+    // Freeze td pertama setiap baris
+    t.querySelectorAll('tbody tr').forEach(function(tr) {
       var td = tr.querySelector('td:first-child');
-      if (!td) return;
-      var bg = tr.style.background || (tr.classList.contains('total-row') ? 'var(--green-pale)' : '#fff');
-      td.style.position = 'sticky';
-      td.style.left = '0';
-      td.style.zIndex = '2';
-      td.style.background = bg || '#fff';
-      td.style.boxShadow = '3px 0 5px -2px rgba(0,0,0,0.10)';
+      if (td) td.classList.add('col-freeze');
     });
   });
 }
