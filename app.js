@@ -2,7 +2,7 @@
 // SUPABASE CONFIG — ganti URL dan KEY dengan milik Anda
 // ============================================================
 const SUPABASE_URL      = 'https://rzmeitgcbcpctisxsxpq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6bWVpdGdjYmNwY3Rpc3hzeHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMzU0NTIsImV4cCI6MjA4ODYxMTQ1Mn0.NJivuuKmq48in32Ruk5hcf5F3LbNa2jL8yjD8GVClj4';
+const SUPABASE_ANON_KEY = 'GANTI_DENGAN_ANON_KEY_DARI_SUPABASE_DASHBOARD';
 var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============ STATE ============
@@ -161,10 +161,11 @@ function applyUserSession() {
   });
   // Sembunyikan tombol aksi berdasarkan permission
   applyActionPerms();
-  // Load data awal
-  loadBus().catch(function(e){ console.error(e); });
-  loadSpbu().catch(function(e){ console.error(e); });
-  updateDashboard().catch(function(e){ console.error(e); });
+  // Load data awal lalu tampilkan dashboard
+  Promise.all([
+    loadBus().catch(function(e){ console.error(e); }),
+    loadSpbu().catch(function(e){ console.error(e); })
+  ]).then(function(){ goPage('dashboard'); });
 }
 
 function applyActionPerms() {
