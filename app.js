@@ -868,6 +868,10 @@ function generateLapBBM() {
   var el=document.getElementById('result-lap-bbm');
   if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
   data=data.map(function(r){r.tgl=String(r.tgl).substring(0,10);r.lambung=String(r.lambung).trim();return r;});var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort(),dates=[...new Set(data.map(function(r){return r.tgl;}))].sort();
+  // DEBUG: log semua record per lambung per tanggal
+  console.log('=== DEBUG LAP BBM ===');
+  console.log('Total records setelah filter:', data.length);
+  data.forEach(function(r){ console.log('tgl:', JSON.stringify(r.tgl), '| lambung:', JSON.stringify(r.lambung), '| nominal:', r.nominal, '| tglLen:', String(r.tgl).length); });
   var tot=data.reduce(function(s,r){return s+Number(r.nominal);},0);
   var html='<div class="card"><div class="card-header"><div class="card-title">Laporan BBM Harian</div></div><div class="table-outer"><table><thead><tr><th class="freeze-col">Lambung</th>'+dates.map(function(d){return'<th>'+d+'</th>';}).join('')+'<th>TOTAL</th></tr></thead><tbody>';
   lambs.forEach(function(lamb){var rowTot=0;html+='<tr><td class="freeze-col" style="position:sticky;left:0;background:#fff;z-index:2;"><strong>'+lamb+'</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.lambung===lamb&&r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);rowTot+=s;html+='<td>'+(s?'Rp '+s.toLocaleString():'-')+'</td>';});html+='<td><strong>Rp '+rowTot.toLocaleString()+'</strong></td></tr>';});
