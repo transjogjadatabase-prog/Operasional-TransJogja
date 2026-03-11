@@ -595,7 +595,7 @@ async function loadBBM() {
   setLoading('tbody-bbm', 12);
   var r = await fetchAll('bbm', 'tgl', false);
   if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
-  DB.bbm = r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:d.nominal,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};});
+  DB.bbm = r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};});
   renderBBM();
   applyFreeze('tbl-bbm');
 }
@@ -725,7 +725,7 @@ async function loadOps() {
   setLoading('tbody-ops',17);
   var r=await fetchAll('operasional','tgl',false);
   if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
-  DB.ops=r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
+  DB.ops=r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
   renderOps();
   applyFreeze('tbl-ops');
 }
@@ -864,10 +864,10 @@ function renderBBMRows(rows) {
 }
 function generateLapBBM() {
   var tglM=document.getElementById('lb-tgl-mulai').value,tglA=document.getElementById('lb-tgl-akhir').value,lambF=document.getElementById('lb-lamb').value;
-  var data=DB.bbm.slice();if(tglM)data=data.filter(function(r){return r.tgl>=tglM;});if(tglA)data=data.filter(function(r){return r.tgl<=tglA;});if(lambF)data=data.filter(function(r){return r.lambung===lambF;});
+  var data=DB.bbm.slice();if(tglM)data=data.filter(function(r){return String(r.tgl).substring(0,10)>=tglM;});if(tglA)data=data.filter(function(r){return String(r.tgl).substring(0,10)<=tglA;});if(lambF)data=data.filter(function(r){return String(r.lambung).trim()===lambF;});
   var el=document.getElementById('result-lap-bbm');
   if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
-  var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort(),dates=[...new Set(data.map(function(r){return r.tgl;}))].sort();
+  data=data.map(function(r){r.tgl=String(r.tgl).substring(0,10);r.lambung=String(r.lambung).trim();return r;});var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort(),dates=[...new Set(data.map(function(r){return r.tgl;}))].sort();
   var tot=data.reduce(function(s,r){return s+Number(r.nominal);},0);
   var html='<div class="card"><div class="card-header"><div class="card-title">Laporan BBM Harian</div></div><div class="table-outer"><table><thead><tr><th class="freeze-col">Lambung</th>'+dates.map(function(d){return'<th>'+d+'</th>';}).join('')+'<th>TOTAL</th></tr></thead><tbody>';
   lambs.forEach(function(lamb){var rowTot=0;html+='<tr><td class="freeze-col" style="position:sticky;left:0;background:#fff;z-index:2;"><strong>'+lamb+'</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.lambung===lamb&&r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);rowTot+=s;html+='<td>'+(s?'Rp '+s.toLocaleString():'-')+'</td>';});html+='<td><strong>Rp '+rowTot.toLocaleString()+'</strong></td></tr>';});
@@ -878,7 +878,7 @@ function generateLapBBM() {
 }
 function generateLapOps() {
   var tglM=document.getElementById('lo-tgl-mulai').value,tglA=document.getElementById('lo-tgl-akhir').value,lambF=document.getElementById('lo-lamb').value;
-  var data=DB.ops.slice();if(tglM)data=data.filter(function(r){return r.tgl>=tglM;});if(tglA)data=data.filter(function(r){return r.tgl<=tglA;});if(lambF)data=data.filter(function(r){return r.lambung===lambF;});
+  var data=DB.ops.slice();if(tglM)data=data.filter(function(r){return String(r.tgl).substring(0,10)>=tglM;});if(tglA)data=data.filter(function(r){return String(r.tgl).substring(0,10)<=tglA;});if(lambF)data=data.filter(function(r){return String(r.lambung).trim()===lambF;});
   var el=document.getElementById('result-lap-ops');
   if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
   var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort();
