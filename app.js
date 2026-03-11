@@ -193,6 +193,7 @@ async function loadAkun() {
   if (r.error) return toast('Gagal memuat akun: '+r.error.message, true);
   DB.akun = r.data;
   renderAkun();
+  applyFreeze('tbl-akun');
 }
 function renderAkun() {
   var tbody = document.getElementById('tbody-akun');
@@ -328,6 +329,38 @@ function setLoading(tbodyId, colspan) {
   if (el) el.innerHTML = '<tr><td colspan="' + colspan + '" style="text-align:center;padding:32px;color:var(--gray-400);"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i><br>Memuat data...</td></tr>';
 }
 
+
+// ============================================================
+// APPLY FREEZE - sticky kolom pertama setelah render
+// ============================================================
+function applyFreeze(tableId) {
+  var tbl = tableId ? document.getElementById(tableId) : null;
+  var tables = tbl ? [tbl] : document.querySelectorAll('.table-outer table, .table-wrap table');
+  tables.forEach(function(t) {
+    // Head - freeze th pertama
+    var ths = t.querySelectorAll('thead tr th:first-child');
+    ths.forEach(function(th) {
+      th.style.position = 'sticky';
+      th.style.left = '0';
+      th.style.zIndex = '6';
+      th.style.background = 'var(--green-dark)';
+      th.style.color = '#fff';
+    });
+    // Body - freeze td pertama
+    var rows = t.querySelectorAll('tbody tr, tfoot tr');
+    rows.forEach(function(tr) {
+      var td = tr.querySelector('td:first-child');
+      if (!td) return;
+      var bg = tr.style.background || (tr.classList.contains('total-row') ? 'var(--green-pale)' : '#fff');
+      td.style.position = 'sticky';
+      td.style.left = '0';
+      td.style.zIndex = '2';
+      td.style.background = bg || '#fff';
+      td.style.boxShadow = '3px 0 5px -2px rgba(0,0,0,0.10)';
+    });
+  });
+}
+
 // ============================================================
 // FETCH ALL — Supabase default limit 1000, ini ambil semua halaman
 // ============================================================
@@ -355,7 +388,8 @@ async function loadBus() {
   var r = await fetchAll('bus', 'created_at', false);
   if (r.error) { toast('Gagal memuat data bus: ' + r.error.message, true); return; }
   DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
-  renderBus(); populateLambDropdowns();
+  renderBus();
+  applyFreeze('tbl-bus'); populateLambDropdowns();
 }
 async function saveBus() {
   var lambung = document.getElementById('bus-lambung').value.trim();
@@ -501,7 +535,8 @@ async function loadSpbu() {
   var r = await fetchAll('spbu', 'created_at', false);
   if (r.error) return toast('Gagal memuat SPBU: ' + r.error.message, true);
   DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode||'', nama:d.nama, alamat:d.alamat||'', hp:d.hp||'', aktif:d.aktif }; });
-  renderSpbu(); populateSpbuDropdowns();
+  renderSpbu();
+  applyFreeze('tbl-spbu'); populateSpbuDropdowns();
 }
 async function saveSpbu() {
   var nama = document.getElementById('spbu-nama').value.trim();
@@ -571,6 +606,7 @@ async function loadBBM() {
   if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
   DB.bbm = r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:d.nominal,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};});
   renderBBM();
+  applyFreeze('tbl-bbm');
 }
 async function saveBBM() {
   var tgl=document.getElementById('bbm-tgl').value, lamb=document.getElementById('bbm-lambung').value, nominal=document.getElementById('bbm-nominal').value;
@@ -700,6 +736,7 @@ async function loadOps() {
   if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
   DB.ops=r.data.map(function(d){return{id:d.id,tgl:d.tgl,lambung:d.lambung,jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
   renderOps();
+  applyFreeze('tbl-ops');
 }
 async function saveOps() {
   var tgl=document.getElementById('ops-tgl').value,lamb=document.getElementById('ops-lambung').value;
@@ -813,6 +850,7 @@ function generateLapBBM() {
   html+='<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td class="freeze-col" style="position:sticky;left:0;background:var(--green-pale);z-index:2;"><strong style="color:var(--green-dark);">TOTAL</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);html+='<td><strong style="color:var(--green-dark);">Rp '+s.toLocaleString()+'</strong></td>';});
   html+='<td><strong style="color:var(--green-dark);">Rp '+tot.toLocaleString()+'</strong></td></tr></tbody></table></div></div>';
   el.innerHTML=html;
+  setTimeout(function(){applyFreeze();},10);
 }
 function generateLapOps() {
   var tglM=document.getElementById('lo-tgl-mulai').value,tglA=document.getElementById('lo-tgl-akhir').value,lambF=document.getElementById('lo-lamb').value;
@@ -822,6 +860,7 @@ function generateLapOps() {
   var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort();
   var rows=lambs.map(function(lamb){var items=data.filter(function(r){return r.lambung===lamb;});var jalur=items[0]?items[0].jalur:'-';var totalJam=items.reduce(function(s,r){return s+(Number(r.kmTempuh)||0);},0);var totalBBM=items.reduce(function(s,r){return s+(Number(r.bbm)||0);},0);var totalRit=items.reduce(function(s,r){return s+(Number(r.rit)||0);},0);var liter=totalBBM/6800;var ratio=liter>0?(totalJam/liter).toFixed(2):'-';return{lamb:lamb,jalur:jalur,totalJam:totalJam,totalBBM:totalBBM,liter:liter.toFixed(2),ratio:ratio,totalRit:totalRit};});
   var gBBM=rows.reduce(function(s,r){return s+r.totalBBM;},0),gRit=rows.reduce(function(s,r){return s+r.totalRit;},0);
+  setTimeout(function(){applyFreeze();},10);
   el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">Rekapitulasi Operasional</div></div><div class="report-summary"><div class="sum-card"><div class="val">'+rows.length+'</div><div class="lbl">Lambung</div></div><div class="sum-card"><div class="val">'+gRit+'</div><div class="lbl">Total Ritase</div></div><div class="sum-card"><div class="val">Rp '+gBBM.toLocaleString()+'</div><div class="lbl">Total BBM (Rp)</div></div><div class="sum-card"><div class="val">'+( gBBM/6800).toFixed(1)+' L</div><div class="lbl">Total BBM (L)</div></div></div><div class="table-wrap"><table><thead><tr><th>Lambung</th><th>Jalur</th><th>Total Jam (mnt)</th><th>BBM (L)</th><th>Rasio</th><th>Total BBM (Rp)</th><th>Total Ritase</th></tr></thead><tbody>'+rows.map(function(r){return'<tr><td><strong>'+r.lamb+'</strong></td><td>'+r.jalur+'</td><td>'+r.totalJam+'</td><td>'+r.liter+'</td><td>'+r.ratio+'</td><td>Rp '+r.totalBBM.toLocaleString()+'</td><td>'+r.totalRit+'</td></tr>';}).join('')+'<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td colspan="2"><strong style="color:var(--green-dark);">TOTAL</strong></td><td><strong style="color:var(--green-dark);">'+rows.reduce(function(s,r){return s+r.totalJam;},0)+'</strong></td><td><strong style="color:var(--green-dark);">'+(gBBM/6800).toFixed(2)+'</strong></td><td>-</td><td><strong style="color:var(--green-dark);">Rp '+gBBM.toLocaleString()+'</strong></td><td><strong style="color:var(--green-dark);">'+gRit+'</strong></td></tr></tbody></table></div></div></div>';
 }
 
