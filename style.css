@@ -411,33 +411,54 @@ thead .cb-th { width:36px; text-align:center; }
 tr.selected-row { background:#f0faf2 !important; }
 
 
+
 /* ===== FREEZE KOLOM ===== */
-.table-wrap {
-  overflow-y: auto;
+.table-outer {
   max-height: 520px;
+  overflow-y: auto;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gray-200);
   position: relative;
 }
-.table-scroll-x {
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+}
+.table-outer .table-wrap {
+  border: none;
+  border-radius: 0;
   overflow-x: auto;
 }
-.table-freeze table {
+.table-wrap table,
+.table-outer table {
   border-collapse: separate !important;
   border-spacing: 0;
+  width: 100%;
 }
 .freeze-col {
   position: sticky !important;
   left: 0 !important;
-  z-index: 2;
   background: #fff;
-  box-shadow: 3px 0 6px -2px rgba(0,0,0,0.12);
+  z-index: 2 !important;
+  box-shadow: 3px 0 5px -1px rgba(0,0,0,0.10);
 }
-thead .freeze-col {
+thead .freeze-col,
+.table-wrap thead th.freeze-col {
   background: var(--green-dark) !important;
   color: #fff !important;
-  z-index: 6 !important;
+  z-index: 10 !important;
+  top: 0;
+  position: sticky !important;
+}
+.table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--green-dark);
+  color: white;
 }
 tbody tr:nth-child(even) .freeze-col { background: #f9fafb; }
 tbody tr:hover .freeze-col { background: #edf7f0 !important; }
-.total-row .freeze-col { background: var(--green-pale) !important; }
+.total-row .freeze-col,
+tr[style*="green-pale"] .freeze-col { background: var(--green-pale) !important; }
