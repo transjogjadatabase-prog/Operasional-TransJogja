@@ -97,6 +97,8 @@ function goPage(id) {
   if (id === 'lap-bbm')       populateLambFilter('lb-lamb');
   if (id === 'lap-ops')       populateLambFilter('lo-lamb');
   if (id === 'kelola-akun')   loadAkun();
+  // Apply freeze ke tabel yang sudah ada di DOM
+  setTimeout(applyFreeze, 50);
   // tutup sidebar di mobile setelah navigasi
   if (window.innerWidth <= 900 && sidebarOpen) { sidebarOpen = false; applySidebarState(); }
 }
@@ -335,7 +337,7 @@ function setLoading(tbodyId, colspan) {
 // ============================================================
 function applyFreeze(tableId) {
   var tbl = tableId ? document.getElementById(tableId) : null;
-  var tables = tbl ? [tbl] : document.querySelectorAll('.table-outer table, .table-wrap table');
+  var tables = tbl ? [tbl] : document.querySelectorAll('.table-outer table');
   tables.forEach(function(t) {
     // Head - freeze th pertama
     var ths = t.querySelectorAll('thead tr th:first-child');
@@ -850,7 +852,7 @@ function generateLapBBM() {
   html+='<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td class="freeze-col" style="position:sticky;left:0;background:var(--green-pale);z-index:2;"><strong style="color:var(--green-dark);">TOTAL</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);html+='<td><strong style="color:var(--green-dark);">Rp '+s.toLocaleString()+'</strong></td>';});
   html+='<td><strong style="color:var(--green-dark);">Rp '+tot.toLocaleString()+'</strong></td></tr></tbody></table></div></div>';
   el.innerHTML=html;
-  setTimeout(function(){applyFreeze();},10);
+  setTimeout(applyFreeze,10);
 }
 function generateLapOps() {
   var tglM=document.getElementById('lo-tgl-mulai').value,tglA=document.getElementById('lo-tgl-akhir').value,lambF=document.getElementById('lo-lamb').value;
@@ -860,7 +862,6 @@ function generateLapOps() {
   var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort();
   var rows=lambs.map(function(lamb){var items=data.filter(function(r){return r.lambung===lamb;});var jalur=items[0]?items[0].jalur:'-';var totalJam=items.reduce(function(s,r){return s+(Number(r.kmTempuh)||0);},0);var totalBBM=items.reduce(function(s,r){return s+(Number(r.bbm)||0);},0);var totalRit=items.reduce(function(s,r){return s+(Number(r.rit)||0);},0);var liter=totalBBM/6800;var ratio=liter>0?(totalJam/liter).toFixed(2):'-';return{lamb:lamb,jalur:jalur,totalJam:totalJam,totalBBM:totalBBM,liter:liter.toFixed(2),ratio:ratio,totalRit:totalRit};});
   var gBBM=rows.reduce(function(s,r){return s+r.totalBBM;},0),gRit=rows.reduce(function(s,r){return s+r.totalRit;},0);
-  setTimeout(function(){applyFreeze();},10);
   el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">Rekapitulasi Operasional</div></div><div class="report-summary"><div class="sum-card"><div class="val">'+rows.length+'</div><div class="lbl">Lambung</div></div><div class="sum-card"><div class="val">'+gRit+'</div><div class="lbl">Total Ritase</div></div><div class="sum-card"><div class="val">Rp '+gBBM.toLocaleString()+'</div><div class="lbl">Total BBM (Rp)</div></div><div class="sum-card"><div class="val">'+( gBBM/6800).toFixed(1)+' L</div><div class="lbl">Total BBM (L)</div></div></div><div class="table-wrap"><table><thead><tr><th>Lambung</th><th>Jalur</th><th>Total Jam (mnt)</th><th>BBM (L)</th><th>Rasio</th><th>Total BBM (Rp)</th><th>Total Ritase</th></tr></thead><tbody>'+rows.map(function(r){return'<tr><td><strong>'+r.lamb+'</strong></td><td>'+r.jalur+'</td><td>'+r.totalJam+'</td><td>'+r.liter+'</td><td>'+r.ratio+'</td><td>Rp '+r.totalBBM.toLocaleString()+'</td><td>'+r.totalRit+'</td></tr>';}).join('')+'<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td colspan="2"><strong style="color:var(--green-dark);">TOTAL</strong></td><td><strong style="color:var(--green-dark);">'+rows.reduce(function(s,r){return s+r.totalJam;},0)+'</strong></td><td><strong style="color:var(--green-dark);">'+(gBBM/6800).toFixed(2)+'</strong></td><td>-</td><td><strong style="color:var(--green-dark);">Rp '+gBBM.toLocaleString()+'</strong></td><td><strong style="color:var(--green-dark);">'+gRit+'</strong></td></tr></tbody></table></div></div></div>';
 }
 
