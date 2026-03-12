@@ -172,11 +172,16 @@ function applyUserSession() {
 function applyActionPerms() {
   // Tombol tambah/import/export berdasarkan izin
   var addBtns    = ['btn-tambah-bus','btn-tambah-spbu','btn-tambah-bbm','btn-tambah-ops','btn-tambah-akun'];
+  var delBtns    = ['btn-delmode-bus','btn-delmode-spbu','btn-delmode-bbm','btn-delmode-ops'];
   var importBtns = document.querySelectorAll('[data-perm="import"]');
   var exportBtns = document.querySelectorAll('[data-perm="export"]');
   addBtns.forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.style.display = canDo('tambah') ? '' : 'none';
+  });
+  delBtns.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display = canDo('hapus') ? '' : 'none';
   });
   importBtns.forEach(function(el){ el.style.display = canDo('import') ? '' : 'none'; });
   exportBtns.forEach(function(el){ el.style.display = canDo('export') ? '' : 'none'; });
