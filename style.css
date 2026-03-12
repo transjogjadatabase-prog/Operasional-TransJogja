@@ -472,3 +472,52 @@ tbody tr:hover { background:#f0faf2; }
 tbody tr:nth-child(even) .col-freeze { background:#f9fafb; }
 tbody tr:hover .col-freeze { background:#f0faf2 !important; }
 tr.selected-row { background:#f0faf2 !important; }
+
+/* ===== STATUS BADGES ===== */
+.badge-approved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #c6f6d5;
+  color: #276749;
+  border: 1px solid #9ae6b4;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fefcbf;
+  color: #975a16;
+  border: 1px solid #f6e05e;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-manual {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e9d8fd;
+  color: #553c9a;
+  border: 1px solid #d6bcfa;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+#card-antrian .card-header {
+  background: linear-gradient(135deg, #fffff0, #fefcbf);
+  border-bottom: 2px solid #f6e05e;
+}
+#card-antrian .card-title {
+  font-size: 14px;
+  font-weight: 700;
+}
