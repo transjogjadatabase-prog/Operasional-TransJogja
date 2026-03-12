@@ -297,7 +297,7 @@
         <div class="table-outer">
           <table id="tbl-bbm">
             <thead><tr>
-              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal (Rp)</th><th>SPBU</th><th>Halte Terakhir</th><th>Jam Halte</th><th>Ket.</th><th>Aksi</th>
+              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal (Rp)</th><th>SPBU</th><th>Halte Terakhir</th><th>Jam Halte</th><th>Ket.</th><th>Status</th><th>Aksi</th>
             <th class="cb-th-hide" id="cb-th-bbm" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('bbm',this)" title="Pilih Semua"></th></tr></thead>
             <tbody id="tbody-bbm"></tbody>
           </table>
@@ -311,6 +311,16 @@
         <div class="section-icon">📋</div>
         <div><h2>Input Operasional</h2><p>Catat data operasional harian armada</p></div>
       </div>
+      <!-- ANTRIAN BBM PENDING -->
+      <div class="card" id="card-antrian">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-hourglass-half" style="color:#d69e2e;"></i> Antrian BBM — Belum Diisi Data Operasional</div>
+        </div>
+        <div class="table-outer" id="antrian-container">
+          <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Memuat antrian...</p></div>
+        </div>
+      </div>
+      <!-- TABEL DATA OPERASIONAL -->
       <div class="card">
         <div class="bulk-bar" id="bulk-bar-ops">
           <span class="sel-count" id="bulk-count-ops">0 dipilih</span>
@@ -325,13 +335,13 @@
             <label class="btn btn-outline btn-sm" style="cursor:pointer"><i class="fas fa-file-import"></i> Import Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importData('ops',this)"></label>
             <button class="btn btn-outline btn-sm" onclick="exportExcel('ops')"><i class="fas fa-file-excel"></i> Export Excel</button>
             <button class="btn btn-outline btn-sm" id="btn-delmode-ops" style="color:#e53e3e;border-color:#e53e3e;" onclick="toggleDeleteMode('ops')"><i class="fas fa-trash"></i> Hapus Data</button>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modal-ops')"><i class="fas fa-plus"></i> Tambah</button>
+            <button class="btn btn-primary btn-sm" onclick="openOpsManual()"><i class="fas fa-plus"></i> Tambah Manual</button>
           </div>
         </div>
         <div class="table-outer" style="font-size:12px;">
           <table id="tbl-ops">
             <thead><tr>
-              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Tgl</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Jam Mulai</th><th>Jam Akhir</th><th>Km Awal Pool</th><th>Km Akhir Pool</th><th>Km Awal Halte</th><th>Km Akhir Halte</th><th>BBM (Rp)</th><th>RIT</th><th>Km Tempuh</th><th>Ratio</th><th>Ket.</th><th>Aksi</th>
+              <th class="freeze-col" style="width:48px;text-align:center;">No.</th><th>Tgl</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Jam Mulai</th><th>Jam Akhir</th><th>Km Awal Pool</th><th>Km Akhir Pool</th><th>Km Awal Halte</th><th>Km Akhir Halte</th><th>BBM (Rp)</th><th>RIT</th><th>Km Tempuh</th><th>Ratio</th><th>Ket.</th><th>Status</th><th>Aksi</th>
             <th class="cb-th-hide" id="cb-th-ops" style="width:52px;text-align:center;">Pilih<br><input type="checkbox" class="cb-select" onclick="toggleSelectAll('ops',this)" title="Pilih Semua"></th></tr></thead>
             <tbody id="tbody-ops"></tbody>
           </table>
