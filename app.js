@@ -628,14 +628,16 @@ async function saveBBM() {
   if (!tgl||!lamb||!nominal) return toast('Tanggal, Lambung, dan Nominal wajib diisi!',true);
   var jamHalteEl=document.getElementById('bbm-jam-halte');
   var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:jamHalteEl?jamHalteEl.value||null:null,ket:document.getElementById('bbm-ket').value};
-  // Cek duplikat: lambung + tanggal + nominal sama
+  // Cek duplikat: tgl + lambung + waktu + nominal
   if (editIdx.bbm < 0) {
+    var waktuVal = document.getElementById('bbm-waktu').value||'';
     var duplikat = DB.bbm.find(function(b) {
       return String(b.lambung).trim() === String(lamb).trim()
         && String(b.tgl).substring(0,10) === tgl
+        && String(b.waktu||'') === waktuVal
         && Number(b.nominal) === parseFloat(nominal);
     });
-    if (duplikat) return toast('⚠️ Data duplikat! Lambung ' + lamb + ' tanggal ' + tgl + ' nominal Rp ' + Number(nominal).toLocaleString() + ' sudah ada.', true);
+    if (duplikat) return toast('⚠️ Data duplikat! Lambung ' + lamb + ' | ' + tgl + ' | ' + (waktuVal||'-') + ' | Rp ' + Number(nominal).toLocaleString() + ' sudah ada.', true);
   }
   var res;
   if (editIdx.bbm>=0){res=await db.from('bbm').update(row).eq('id',DB.bbm[editIdx.bbm].id);if(!res.error)toast('Data BBM diperbarui!');}
@@ -1082,15 +1084,15 @@ async function importData(type, input) {
       else if(type==='bbm'){
         var rawBBM=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){return{tgl:excelDateToStr(r.Tanggal||r.tgl),lambung:String(r.Lambung||r.lambung||'').trim(),jalur:r.Jalur||r.jalur||'',nopol:r['No Polisi']||r.nopol||'',waktu:excelTimeToStr(r['Waktu Pengisian']||r.waktu),nominal:parseFloat(r.Nominal||r.nominal||0),spbu:r.SPBU||r.spbu||'',halte:r['Halte Terakhir']||r.halte||'',jam_halte:excelTimeToStr(r['Jam Halte Terakhir']),ket:r.Keterangan||r.ket||''};});
         var existingKeys={};
-        DB.bbm.forEach(function(b){existingKeys[String(b.lambung).trim()+'|'+String(b.tgl).substring(0,10)+'|'+Number(b.nominal)]=true;});
+        DB.bbm.forEach(function(b){existingKeys[String(b.lambung).trim()+'|'+String(b.tgl).substring(0,10)+'|'+String(b.waktu||'')+'|'+Number(b.nominal)]=true;});
         var dupCount=0;
         records=rawBBM.filter(function(r){
-          var key=String(r.lambung).trim()+'|'+String(r.tgl).substring(0,10)+'|'+Number(r.nominal);
+          var key=String(r.lambung).trim()+'|'+String(r.tgl).substring(0,10)+'|'+String(r.waktu||'')+'|'+Number(r.nominal);
           if(existingKeys[key]){dupCount++;return false;}
           existingKeys[key]=true;
           return true;
         });
-        if(dupCount>0)toast('\u26a0\ufe0f '+dupCount+' baris dilewati (duplikat lambung+tanggal+nominal).',false);
+        if(dupCount>0)toast('\u26a0\ufe0f '+dupCount+' baris dilewati (duplikat: tgl+lambung+waktu+nominal).',false);
       } else if(type==='ops'){
         // Fetch fresh BBM dari Supabase untuk lookup akurat
         var bbmLookup = {};
