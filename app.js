@@ -496,28 +496,47 @@ function getCheckedIds(type) {
   document.querySelectorAll('#tbody-' + type + ' .cb-row:checked').forEach(function(c){ ids.push(c.value); });
   return ids;
 }
+async function deleteByIds(tblName, ids) {
+  // Hapus satu per satu untuk menghindari masalah .in() dengan RLS
+  var errors = [];
+  for (var i = 0; i < ids.length; i++) {
+    try {
+      var res = await db.from(tblName).delete().eq('id', ids[i]);
+      if (res.error) errors.push(res.error.message);
+    } catch(e) {
+      errors.push(e.message || 'Network error');
+    }
+  }
+  return errors;
+}
+
 async function bulkDelete(type) {
   var ids = getCheckedIds(type);
   if (!ids.length) return toast('Pilih data terlebih dahulu!', true);
   if (!confirm('Hapus ' + ids.length + ' data yang dipilih?')) return;
   var tbl = type === 'ops' ? 'operasional' : type;
-  var res = await db.from(tbl).delete().in('id', ids);
-  if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
+  toast('⏳ Menghapus ' + ids.length + ' data...');
+  var errors = await deleteByIds(tbl, ids);
+  if (errors.length) return toast('Gagal hapus: ' + errors[0], true);
   toast('✅ ' + ids.length + ' data dihapus.');
   clearSelect(type);
+  toggleDeleteMode(type); // matikan delete mode
   if(type==='bus')loadBus(); else if(type==='spbu')loadSpbu(); else if(type==='bbm')loadBBM(); else if(type==='ops')loadOps();
   updateDashboard();
 }
+
 async function deleteAll(type) {
   var DB_arr = type==='ops' ? DB.ops : DB[type];
   if (!DB_arr.length) return toast('Tidak ada data!', true);
   if (!confirm('⚠️ Hapus SEMUA ' + DB_arr.length + ' data ' + type.toUpperCase() + '? Tindakan ini tidak bisa dibatalkan!')) return;
   var tbl = type === 'ops' ? 'operasional' : type;
   var ids = DB_arr.map(function(r){ return r.id; });
-  var res = await db.from(tbl).delete().in('id', ids);
-  if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
+  toast('⏳ Menghapus ' + ids.length + ' data...');
+  var errors = await deleteByIds(tbl, ids);
+  if (errors.length) return toast('Gagal hapus: ' + errors[0], true);
   toast('✅ Semua data ' + type.toUpperCase() + ' dihapus.');
   clearSelect(type);
+  toggleDeleteMode(type); // matikan delete mode
   if(type==='bus')loadBus(); else if(type==='spbu')loadSpbu(); else if(type==='bbm')loadBBM(); else if(type==='ops')loadOps();
   updateDashboard();
 }
@@ -546,9 +565,11 @@ function editBus(i) {
 }
 async function delBus(i) {
   if (!confirm('Hapus data bus ini?')) return;
-  var res = await db.from('bus').delete().eq('id', DB.bus[i].id);
-  if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
-  toast('Data bus dihapus.'); loadBus(); updateDashboard();
+  try {
+    var res = await db.from('bus').delete().eq('id', DB.bus[i].id);
+    if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
+    toast('Data bus dihapus.'); loadBus(); updateDashboard();
+  } catch(e) { toast('Gagal hapus: ' + (e.message||'Network error'), true); }
 }
 
 // ============================================================
@@ -597,9 +618,11 @@ function editSpbu(i) {
 }
 async function delSpbu(i) {
   if (!confirm('Hapus data SPBU ini?')) return;
-  var res = await db.from('spbu').delete().eq('id', DB.spbu[i].id);
-  if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
-  toast('Data SPBU dihapus.'); loadSpbu(); updateDashboard();
+  try {
+    var res = await db.from('spbu').delete().eq('id', DB.spbu[i].id);
+    if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
+    toast('Data SPBU dihapus.'); loadSpbu(); updateDashboard();
+  } catch(e) { toast('Gagal hapus: ' + (e.message||'Network error'), true); }
 }
 
 // ============================================================
@@ -688,9 +711,11 @@ function editBBM(i) {
 }
 async function delBBM(i) {
   if(!confirm('Hapus data BBM ini?'))return;
-  var res=await db.from('bbm').delete().eq('id',DB.bbm[i].id);
-  if(res.error)return toast('Gagal hapus: '+res.error.message,true);
-  toast('Data BBM dihapus.');loadBBM();updateDashboard();
+  try {
+    var res=await db.from('bbm').delete().eq('id',DB.bbm[i].id);
+    if(res.error)return toast('Gagal hapus: '+res.error.message,true);
+    toast('Data BBM dihapus.');loadBBM();updateDashboard();
+  } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
 }
 
 // ============================================================
@@ -918,9 +943,11 @@ function editOps(i) {
 }
 async function delOps(i) {
   if(!confirm('Hapus data operasional ini?'))return;
-  var res=await db.from('operasional').delete().eq('id',DB.ops[i].id);
-  if(res.error)return toast('Gagal hapus: '+res.error.message,true);
-  toast('Data operasional dihapus.');loadOps();updateDashboard();
+  try {
+    var res=await db.from('operasional').delete().eq('id',DB.ops[i].id);
+    if(res.error)return toast('Gagal hapus: '+res.error.message,true);
+    toast('Data operasional dihapus.');loadOps();updateDashboard();
+  } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
 }
 
 // ============================================================
