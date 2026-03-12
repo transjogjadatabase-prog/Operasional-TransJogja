@@ -3,29 +3,31 @@
 // ============================================================
 (function() {
   function runBusAnimation() {
-    var busWrap   = document.getElementById('bus-wrap');
-    var roadDash  = document.getElementById('road-dashes');
-    var loginBox  = document.getElementById('login-box');
+    var busWrap  = document.getElementById('bus-wrap');
+    var loginBox = document.getElementById('login-box');
     if (!busWrap) return;
 
-    // Phase 1: bus drives in (CSS handles it via @keyframes busDriveIn)
-    // After 1.8s bus has settled → stop road + open door
+    // Phase 1: bus drives in via CSS (1.8s anim + 0.3s delay = ~2.1s total)
+    // After bus settles → add glow + open door
     setTimeout(function() {
-      if (roadDash) roadDash.classList.add('stopped');
-      if (busWrap)  busWrap.classList.add('door-open');
-    }, 1800);
+      if (busWrap) busWrap.classList.add('bus-stopped');
+    }, 2150);
 
-    // Phase 2: 0.6s after door opens → show login form
+    // Open door 0.3s after stop
+    setTimeout(function() {
+      if (busWrap) busWrap.classList.add('door-open');
+    }, 2450);
+
+    // Show login form smoothly after door animation (~0.9s)
     setTimeout(function() {
       if (loginBox) {
         loginBox.classList.add('visible');
-        // Focus username after form appears
         setTimeout(function() {
           var u = document.getElementById('login-username');
           if (u) u.focus();
-        }, 700);
+        }, 850);
       }
-    }, 2450);
+    }, 3200);
   }
 
   if (document.readyState === 'loading') {
