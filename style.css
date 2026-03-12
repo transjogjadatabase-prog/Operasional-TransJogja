@@ -350,93 +350,71 @@ textarea { resize:vertical; min-height:80px; }
 /* ========== LOGIN SCREEN ========== */
 #login-screen {
   position: fixed; inset: 0;
-  background: radial-gradient(ellipse at 40% 60%, #1e7a3c 0%, #0a2a12 55%, #040c06 100%);
+  background: radial-gradient(ellipse at 40% 50%, #1a1a0a 0%, #0a0a05 100%);
   display: flex; align-items: center; justify-content: center;
   z-index: 9999; overflow: hidden;
 }
 
-/* ── ROAD ── */
-#road {
-  position: absolute;
-  bottom: calc(50% - 78px);
-  left: 0; right: 0;
-  height: 28px;
-  background: #1a1a1a;
-  border-top: 2px solid #333;
-  border-bottom: 2px solid #333;
-}
-#road-dashes {
-  position: absolute;
-  bottom: calc(50% - 68px);
-  left: 0; right: 0;
-  height: 6px;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 30px,
-    transparent 30px, transparent 60px
-  );
-  animation: roadMove 0.12s linear infinite;
-}
-@keyframes roadMove {
-  from { background-position: 0 0; }
-  to   { background-position: -60px 0; }
-}
-
-/* ── SMOKE ── */
-.smoke {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(200,220,200,0.35);
-  animation: smokeRise 0.9s ease-out infinite;
-  opacity: 0;
+/* ── BUS STAGE ── */
+#bus-stage {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
   pointer-events: none;
 }
-#s1 { width:14px; height:14px; animation-delay:0.3s; bottom:calc(50% - 52px); }
-#s2 { width:9px;  height:9px;  animation-delay:0.55s; bottom:calc(50% - 46px); }
-#s3 { width:7px;  height:7px;  animation-delay:0.7s;  bottom:calc(50% - 58px); }
-@keyframes smokeRise {
-  0%   { left: calc(50% - 390px); opacity:0.7; transform:scale(1) translateY(0); }
-  100% { left: calc(50% - 440px); opacity:0;   transform:scale(3) translateY(-20px); }
-}
 
-/* ── BUS WRAP ── */
 #bus-wrap {
   position: absolute;
-  left: -300px;
-  bottom: calc(50% - 86px);
-  image-rendering: pixelated;
-  filter: drop-shadow(0 12px 32px rgba(0,0,0,0.6));
-  /* Phase 1: drive in and stop center */
-  animation:
-    busDriveIn 1.6s cubic-bezier(0.25,0.46,0.45,0.94) 0.2s forwards;
+  left: -620px;
+  top: 50%;
+  transform: translateY(-48%);
+  animation: busDriveIn 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.7));
 }
 @keyframes busDriveIn {
-  0%   { left: -300px; }
-  75%  { left: calc(50% - 140px); }
-  88%  { left: calc(50% - 122px); }  /* slight overshoot */
-  100% { left: calc(50% - 130px); }  /* settle */
+  0%   { left: -620px; }
+  70%  { left: calc(50% - 300px); }
+  84%  { left: calc(50% - 278px); }
+  92%  { left: calc(50% - 292px); }
+  100% { left: calc(50% - 285px); }
 }
 
-/* When bus stops, stop road scrolling */
-#road-dashes.stopped { animation: none; }
+/* Door overlays — positioned over the bus door area */
+#door-overlay-left,
+#door-overlay-right {
+  position: absolute;
+  /* Tuned to match bus image door position ~left 6%, top 52%, h 36% of bus */
+  top: 52%;
+  height: 36%;
+  width: 7%;
+  background: transparent;
+  pointer-events: none;
+}
+#door-overlay-left  { left: 5%;  transform-origin: left center; }
+#door-overlay-right { left: 12%; transform-origin: right center; }
 
-/* ── DOOR ANIMATION (CSS only, triggered by class) ── */
-/* Door panels use CSS clip-path to simulate sliding open */
-#bus-wrap.door-open #door-left,
-#bus-wrap.door-open #door-left2 {
-  animation: doorSlideLeft 0.5s ease-in-out forwards;
+/* When door-open class applied */
+#bus-wrap.door-open #door-overlay-left {
+  animation: doorOpenLeft 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-#bus-wrap.door-open #door-right,
-#bus-wrap.door-open #door-right2 {
-  animation: doorSlideRight 0.5s ease-in-out forwards;
+#bus-wrap.door-open #door-overlay-right {
+  animation: doorOpenRight 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-@keyframes doorSlideLeft {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-16px); opacity:0; }
+@keyframes doorOpenLeft {
+  0%   { transform: scaleX(1);   opacity:1; }
+  100% { transform: scaleX(0);   opacity:0; }
 }
-@keyframes doorSlideRight {
-  from { transform: translateX(0); }
-  to   { transform: translateX(16px); opacity:0; }
+@keyframes doorOpenRight {
+  0%   { transform: scaleX(1);   opacity:1; }
+  100% { transform: scaleX(0);   opacity:0; }
+}
+
+/* Glow pulse on bus after stop */
+#bus-wrap.bus-stopped #bus-img {
+  animation: busGlow 1.2s ease-in-out infinite alternate;
+}
+@keyframes busGlow {
+  from { filter: drop-shadow(0 30px 60px rgba(0,0,0,0.7)) brightness(1); }
+  to   { filter: drop-shadow(0 30px 80px rgba(100,200,100,0.25)) brightness(1.05); }
 }
 
 /* ── LOGIN BOX ── */
@@ -449,135 +427,19 @@ textarea { resize:vertical; min-height:80px; }
   text-align: center;
   position: relative; z-index: 2;
   opacity: 0;
-  transform: translateY(30px) scale(0.9);
+  transform: translateY(40px) scale(0.88);
   pointer-events: none;
 }
 .login-box.visible {
-  animation: formRiseUp 0.65s cubic-bezier(0.34,1.4,0.64,1) forwards;
+  animation: formRiseUp 0.8s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
   pointer-events: auto;
 }
 @keyframes formRiseUp {
-  0%   { opacity:0; transform:translateY(30px) scale(0.9); }
-  100% { opacity:1; transform:translateY(0)    scale(1); }
+  0%   { opacity:0; transform: translateY(40px) scale(0.88); }
+  60%  { opacity:1; }
+  100% { opacity:1; transform: translateY(0) scale(1); }
 }
-  100% { opacity:1; transform:scale(1) translateY(0); }
-}
-.login-logo { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:28px; }
-.login-logo img { width:56px; height:56px; object-fit:contain; border-radius:12px; }
-.login-logo-text .title { font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--green-dark); }
-.login-logo-text .sub { font-size:11px; color:var(--gray-400); letter-spacing:1.5px; text-transform:uppercase; }
-.login-box h2 { font-size:17px; color:var(--gray-600); margin-bottom:24px; font-weight:500; }
-.login-box .form-group { margin-bottom:16px; text-align:left; }
-.login-box label { font-size:12px; font-weight:600; color:var(--gray-600); margin-bottom:5px; display:block; }
-.login-box input { width:100%; padding:11px 14px; border:1.5px solid var(--gray-200); border-radius:10px; font-size:14px; transition:border 0.2s; }
-.login-box input:focus { outline:none; border-color:var(--green-main); }
-.login-btn { width:100%; padding:13px; background:var(--green-dark); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; margin-top:8px; transition:background 0.2s; }
-.login-btn:hover { background:var(--green-main); }
-.login-error { color:#e53e3e; font-size:13px; margin-top:10px; min-height:18px; }
 
-/* ========== ROLE BADGE ========== */
-.badge-role-admin  { background:#ffeeba; color:#856404; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
-.badge-role-staf   { background:#d4edda; color:#155724; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
-.badge-role-guest  { background:#e2e3e5; color:#383d41; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
-
-/* ========== PERMISSION TOGGLE ========== */
-.perm-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
-.perm-item { display:flex; align-items:center; gap:8px; background:var(--gray-100); border-radius:8px; padding:8px 10px; font-size:12px; }
-.perm-item input[type=checkbox] { accent-color:var(--green-main); width:15px; height:15px; }
-.perm-section-title { font-size:11px; font-weight:700; color:var(--gray-400); letter-spacing:1px; text-transform:uppercase; margin:12px 0 4px; }
-
-/* ========== AKUN MENU SIDEBAR ========== */
-.sidebar-footer .logout-btn {
-  width:100%; padding:9px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
-  color:rgba(255,255,255,0.7); border-radius:10px; font-size:13px; cursor:pointer; margin-top:8px;
-  transition:background 0.2s;
-}
-.sidebar-footer .logout-btn:hover { background:rgba(255,255,255,0.16); color:#fff; }
-
-
-/* ========== MULTI DELETE ========== */
-.cb-select { accent-color:var(--green-main); width:15px; height:15px; cursor:pointer; }
-.cb-row { display:none; }
-.delete-mode .cb-row { display:inline-block; }
-.cb-th-hide { display:none; }
-.delete-mode .cb-th-hide { display:table-cell; }
-.bulk-bar {
-  display:none; align-items:center; gap:10px;
-  background:var(--green-pale); border:1.5px solid var(--green-main);
-  border-radius:10px; padding:8px 14px; margin-bottom:10px;
-  font-size:13px; font-weight:600; color:var(--green-dark);
-}
-.bulk-bar.show { display:flex; }
-.bulk-bar .sel-count { flex:1; }
-.btn-bulk-del { background:#e53e3e; color:#fff; border:none; border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; }
-.btn-bulk-del:hover { background:#c53030; }
-.btn-bulk-cancel { background:transparent; color:var(--gray-600); border:1.5px solid var(--gray-200); border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; }
-thead .cb-th { width:36px; text-align:center; }
-tr.selected-row { background:#f0faf2 !important; }
-
-
-
-
-
-/* ===== TABLE RULES ===== */
-table { font-size:13px; border-collapse:collapse; width:100%; }
-
-thead th {
-  padding:13px 14px; text-align:left;
-  font-weight:600; font-size:12px; letter-spacing:0.5px;
-  font-family:var(--font-body);
-  background:var(--green-dark); color:white;
-  white-space:nowrap;
-}
-tbody tr { transition:background 0.15s; }
-tbody td {
-  padding:11px 14px; border-bottom:1px solid var(--gray-200);
-  color:var(--gray-600); vertical-align:middle; white-space:nowrap;
-}
-tbody tr:last-child td { border-bottom:none; }
-tbody tr:nth-child(even) { background:#f9fafb; }
-tbody tr:hover { background:#f0faf2; }
-
-/* ===== TABLE CONTAINER ===== */
-.table-outer {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 520px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--gray-200);
-  scrollbar-width: thin;
-  scrollbar-color: var(--green-main) #e8f5e9;
-}
-.table-outer::-webkit-scrollbar { height:8px; width:8px; }
-.table-outer::-webkit-scrollbar-track { background:#e8f5e9; }
-.table-outer::-webkit-scrollbar-thumb { background:var(--green-main); border-radius:4px; }
-.table-outer table { width:max-content; min-width:100%; }
-
-/* Freeze: header atas */
-.table-outer thead th {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-}
-/* Freeze: kolom kiri body */
-.col-freeze {
-  position: sticky !important;
-  left: 0 !important;
-  z-index: 2;
-  background: #fff;
-  box-shadow: 3px 0 5px -2px rgba(0,0,0,0.10);
-}
-/* Freeze: kolom kiri header */
-.col-freeze-head {
-  position: sticky !important;
-  left: 0 !important;
-  z-index: 5 !important;
-  background: var(--green-dark) !important;
-}
-tbody tr:nth-child(even) .col-freeze { background:#f9fafb; }
-tbody tr:hover .col-freeze { background:#f0faf2 !important; }
-tr.selected-row { background:#f0faf2 !important; }
 
 /* ===== STATUS BADGES ===== */
 .badge-approved {
