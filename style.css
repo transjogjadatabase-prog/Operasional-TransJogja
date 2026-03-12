@@ -521,27 +521,6 @@ textarea { resize:vertical; min-height:80px; }
   animation: iconFloat 4s ease-in-out infinite;
 }
 
-/* ── BUS FLOATING IMAGE ── */
-#login-bus-float {
-  position: absolute;
-  top: -20px;
-  right: -55px;
-  pointer-events: none;
-  z-index: 3;
-  animation: busFloat 5s ease-in-out 0.5s infinite;
-  transform-origin: center bottom;
-}
-@keyframes busFloat {
-  0%, 100% { transform: translateY(0px) rotate(-1deg); }
-  50%       { transform: translateY(-12px) rotate(0.8deg); }
-}
-#login-bus-img {
-  width: 230px;
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 24px 40px rgba(0,0,0,0.75))
-          drop-shadow(0 0 24px rgba(180,230,80,0.12));
-}
 
 /* ── CARD BODY ── */
 #login-card-body {
