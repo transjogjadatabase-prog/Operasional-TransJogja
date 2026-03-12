@@ -1091,8 +1091,7 @@ async function importData(type, input) {
           return true;
         });
         if(dupCount>0)toast('\u26a0\ufe0f '+dupCount+' baris dilewati (duplikat lambung+tanggal+nominal).',false);
-      };
-      else if(type==='ops'){
+      } else if(type==='ops'){
         // Fetch fresh BBM dari Supabase untuk lookup akurat
         var bbmLookup = {};
         toast('⏳ Mengambil data BBM...');
