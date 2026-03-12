@@ -466,15 +466,20 @@ function toggleDeleteMode(type) {
   var tbl  = document.getElementById('tbl-' + type);
   var btn  = document.getElementById('btn-delmode-' + type);
   var bar  = document.getElementById('bulk-bar-' + type);
+  var cbTh = document.getElementById('cb-th-' + type);
   var isOn = tbl.classList.toggle('delete-mode');
   if (isOn) {
     btn.innerHTML = '<i class="fas fa-times"></i> Batal Hapus';
     btn.style.background = '#e53e3e';
     btn.style.color = '#fff';
+    btn.style.borderColor = '#e53e3e';
+    if (cbTh) cbTh.classList.add('show');
   } else {
     btn.innerHTML = '<i class="fas fa-trash"></i> Hapus Data';
     btn.style.background = '';
     btn.style.color = '#e53e3e';
+    btn.style.borderColor = '#e53e3e';
+    if (cbTh) cbTh.classList.remove('show');
     clearSelect(type);
     bar.classList.remove('show');
   }
