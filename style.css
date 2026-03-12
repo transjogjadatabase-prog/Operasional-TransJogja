@@ -254,6 +254,12 @@ tbody tr:hover .freeze-col { background:var(--green-pale); }
 .cb-th-hide.show { display:table-cell; }
 .cb-select { width:16px; height:16px; cursor:pointer; accent-color:var(--green-main); }
 
+/* Delete mode — tampilkan kolom checkbox */
+table.delete-mode .cb-th-hide { display:table-cell; }
+table.delete-mode td.cb-th-hide { display:table-cell; }
+.selected-row { background:#fff3cd !important; }
+.selected-row .freeze-col { background:#fff3cd !important; }
+
 /* Empty state */
 .empty-state { text-align:center; padding:48px 20px; color:var(--gray-400); }
 .empty-state i { font-size:2.5rem; margin-bottom:12px; display:block; opacity:0.4; }
