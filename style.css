@@ -127,9 +127,10 @@ body {
 /* ========== MAIN ========== */
 .main {
   margin-left: 0;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   transition: margin-left 0.32s cubic-bezier(0.4,0,0.2,1);
 }
 .main.sidebar-open {
@@ -168,7 +169,7 @@ body {
 .btn-icon:hover { background:var(--green-pale); color:var(--green-main); }
 
 /* ========== CONTENT ========== */
-.content { flex:1; padding:28px 32px; box-sizing:border-box; min-width:0; }
+.content { flex:1; padding:28px 32px; box-sizing:border-box; min-width:0; overflow-y:auto; overflow-x:hidden; }
 .page { display:none; }
 .page.active { display:block; animation: fadeIn 0.3s ease; min-width:0; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -227,13 +228,14 @@ body {
 .table-actions { display:flex; gap:8px; flex-wrap:wrap; }
 
 /* ========== TABLES ========== */
-.table-outer { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.table-outer { overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 280px); -webkit-overflow-scrolling:touch; }
 table { width:100%; border-collapse:collapse; font-size:13px; min-width:600px; }
 thead tr { border-bottom:2px solid var(--gray-200); }
 thead th {
   padding:10px 12px; text-align:left; font-size:11.5px; font-weight:700;
   color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px;
-  white-space:nowrap; background:#fff; position:sticky; top:0; z-index:1;
+  white-space:nowrap; background:#fff; position:sticky; top:0; z-index:3;
+  box-shadow: 0 1px 0 var(--gray-200);
 }
 tbody tr { border-bottom:1px solid var(--gray-100); transition:background 0.15s; }
 tbody tr:last-child { border-bottom:none; }
@@ -421,7 +423,7 @@ textarea { resize:vertical; min-height:80px; }
   .dashboard-grid { grid-template-columns:1fr; }
   .form-grid { grid-template-columns:1fr; }
   .report-summary { grid-template-columns:1fr 1fr; }
-  .content { flex:1; padding:28px 32px; box-sizing:border-box; min-width:0; }
+  .content { flex:1; padding:28px 32px; box-sizing:border-box; min-width:0; overflow-y:auto; overflow-x:hidden; }
   .topbar { padding: 14px 16px; }
 }
 
