@@ -1,45 +1,4 @@
 // ============================================================
-// BUS LOGIN ANIMATION CONTROLLER
-// ============================================================
-(function() {
-  function runBusAnimation() {
-    var busWrap   = document.getElementById('bus-wrap');
-    var loginBox  = document.getElementById('login-box');
-    var doorLight = document.getElementById('door-light');
-    if (!busWrap) return;
-
-    // Bus drives in via CSS animation (0.5s delay + 2.2s = settles at ~2.7s)
-    // Step 1 @ 2.7s: bus settled → add glow
-    setTimeout(function() {
-      busWrap.classList.add('bus-stopped');
-    }, 2700);
-
-    // Step 2 @ 3.1s: door light beam appears (warm glow from door opening)
-    setTimeout(function() {
-      if (doorLight) doorLight.classList.add('active');
-    }, 3100);
-
-    // Step 3 @ 3.6s: form rises up smoothly
-    setTimeout(function() {
-      if (loginBox) {
-        loginBox.classList.add('visible');
-        // Focus after form appears
-        setTimeout(function() {
-          var u = document.getElementById('login-username');
-          if (u) u.focus();
-        }, 950);
-      }
-    }, 3600);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runBusAnimation);
-  } else {
-    runBusAnimation();
-  }
-})();
-
-// ============================================================
 // SUPABASE CONFIG — ganti URL dan KEY dengan milik Anda
 // ============================================================
 const SUPABASE_URL      = 'https://rzmeitgcbcpctisxsxpq.supabase.co';
