@@ -648,8 +648,12 @@ async function saveBBM() {
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
   if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
+  // Kumpulkan bbm_id yang sudah dipakai di operasional
+  var usedBbmIds={};
+  DB.ops.forEach(function(o){if(o.bbmId)usedBbmIds[o.bbmId]=true;});
   tbody.innerHTML=DB.bbm.map(function(r,i){
-    var statusHtml = r.status==='approved'
+    var sudahOps = usedBbmIds[r.id];
+    var statusHtml = sudahOps
       ? '<span class="badge-approved"><i class="fas fa-check-circle"></i> Approved</span>'
       : '<span class="badge-pending"><i class="fas fa-clock"></i> Pending</span>';
     return '<tr>'
@@ -775,8 +779,11 @@ async function loadOps() {
 function renderAntrian() {
   var container = document.getElementById('antrian-container');
   if (!container) return;
-  // BBM yang statusnya pending
-  var antrian = DB.bbm.filter(function(r){ return r.status === 'pending'; });
+  // Kumpulkan semua bbm_id yang sudah punya pasangan di operasional
+  var usedBbmIds = {};
+  DB.ops.forEach(function(o){ if(o.bbmId) usedBbmIds[o.bbmId] = true; });
+  // BBM yang belum punya pasangan operasional (belum ada bbm_id-nya di ops)
+  var antrian = DB.bbm.filter(function(r){ return !usedBbmIds[r.id]; });
   antrian.sort(function(a,b){ return a.tgl < b.tgl ? -1 : a.tgl > b.tgl ? 1 : 0; });
   if (!antrian.length) {
     container.innerHTML = '<div class="empty-state" style="padding:24px;"><i class="fas fa-check-double" style="font-size:2rem;color:#38a169;"></i><p style="margin-top:8px;color:#38a169;font-weight:600;">Semua data BBM sudah diproses!</p></div>';
@@ -853,11 +860,8 @@ async function saveOps() {
   if(editIdx.ops>=0){res=await db.from('operasional').update(row).eq('id',DB.ops[editIdx.ops].id);if(!res.error)toast('Data operasional diperbarui!');}
   else{res=await db.from('operasional').insert(row);if(!res.error)toast('Data operasional disimpan!');}
   if(res.error)return toast('Error: '+res.error.message,true);
-  // Jika dari antrian BBM, update status bbm jadi approved
-  if(pendingBBMId) {
-    await db.from('bbm').update({status:'approved'}).eq('id',pendingBBMId);
-    pendingBBMId = null;
-  }
+  // Reset pendingBBMId setelah save
+  pendingBBMId = null;
   closeModal('modal-ops');loadOps();loadBBM();renderAntrian();updateDashboard();
 }
 function renderOps() {
