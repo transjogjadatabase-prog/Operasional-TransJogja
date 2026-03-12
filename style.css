@@ -349,12 +349,93 @@ textarea { resize:vertical; min-height:80px; }
 
 /* ========== LOGIN SCREEN ========== */
 #login-screen {
-  position:fixed; inset:0; background:linear-gradient(135deg,var(--green-dark) 0%,#0a2a12 100%);
+  position:fixed; inset:0;
+  background: radial-gradient(ellipse at 30% 50%, #1a6b34 0%, #0a2a12 60%, #050f07 100%);
   display:flex; align-items:center; justify-content:center; z-index:9999;
+  overflow:hidden;
 }
+
+/* ===== BUS STAGE ===== */
+#bus-stage {
+  position:absolute; inset:0; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+}
+#bus-pixel {
+  position:absolute;
+  left:-220px;
+  top:50%;
+  transform:translateY(-50%);
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+  animation: busRide 1.4s cubic-bezier(0.25,0.46,0.45,0.94) 0.3s forwards;
+  image-rendering: pixelated;
+}
+@keyframes busRide {
+  0%   { left:-220px; }
+  70%  { left:calc(50% - 90px); }
+  82%  { left:calc(50% - 70px); }
+  90%  { left:calc(50% - 85px); }
+  100% { left:calc(50% - 80px); opacity:0; transform:translateY(-50%) scale(1.15); }
+}
+
+/* Wheel spin via translateY illusion — road line moves */
+#road-line {
+  position:absolute;
+  bottom: calc(50% - 58px);
+  left:0; right:0;
+  height:4px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 40px, transparent 40px, transparent 80px);
+  animation: roadScroll 0.08s linear infinite;
+}
+@keyframes roadScroll {
+  from { background-position: 0 0; }
+  to   { background-position: -80px 0; }
+}
+
+/* Smoke */
+.smoke {
+  position:absolute;
+  width:12px; height:12px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.25);
+  animation: smokePuff 0.8s ease-out infinite;
+  opacity:0;
+}
+#s1 { top:calc(50% - 4px);  animation-delay:0.4s; }
+#s2 { top:calc(50% - 10px); animation-delay:0.65s; width:8px; height:8px; }
+#s3 { top:calc(50% + 2px);  animation-delay:0.55s; width:6px; height:6px; }
+
+@keyframes smokePuff {
+  0%   { left:calc(50% - 220px); opacity:0.6; transform:scale(1); }
+  100% { left:calc(50% - 260px); opacity:0;   transform:scale(2.5); }
+}
+
+/* Impact burst */
+#impact-burst {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%, -60%) scale(0);
+  font-size:72px;
+  line-height:1;
+  animation: burst 0.5s ease-out 1.55s forwards;
+  pointer-events:none;
+}
+@keyframes burst {
+  0%   { transform:translate(-50%,-60%) scale(0); opacity:1; }
+  50%  { transform:translate(-50%,-60%) scale(1.4); opacity:1; }
+  100% { transform:translate(-50%,-80%) scale(0.8); opacity:0; }
+}
+
+/* ===== LOGIN BOX ===== */
 .login-box {
   background:#fff; border-radius:24px; padding:48px 40px; width:100%; max-width:400px;
-  box-shadow:0 32px 80px rgba(0,0,0,0.3); text-align:center;
+  box-shadow:0 32px 80px rgba(0,0,0,0.5); text-align:center;
+  position:relative; z-index:2;
+  opacity:0; transform:scale(0.85) translateY(20px);
+  animation: formAppear 0.6s cubic-bezier(0.34,1.56,0.64,1) 2.1s forwards;
+}
+@keyframes formAppear {
+  0%   { opacity:0; transform:scale(0.85) translateY(20px); }
+  100% { opacity:1; transform:scale(1) translateY(0); }
 }
 .login-logo { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:28px; }
 .login-logo img { width:56px; height:56px; object-fit:contain; border-radius:12px; }
