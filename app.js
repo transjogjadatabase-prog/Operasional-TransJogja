@@ -8,6 +8,7 @@ var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ============ STATE ============
 let DB = { bus: [], spbu: [], bbm: [], ops: [], akun: [] };
 let editIdx = { bus: -1, spbu: -1, bbm: -1, ops: -1, akun: -1 };
+var pendingBBMId = null; // bbm.id yang sedang diproses dari antrian
 let sidebarOpen = false;
 let currentUser = null; // { id, nama, username, role, perms }
 
@@ -300,6 +301,28 @@ function setDateNow() {
 }
 
 // ============ MODALS ============
+function openOpsManual() {
+  pendingBBMId = null;
+  editIdx.ops = -1;
+  populateLambDropdowns();
+  document.getElementById('ops-tgl').value='';
+  document.getElementById('ops-lambung').value='';
+  document.getElementById('ops-jalur').value='';
+  document.getElementById('ops-nopol').value='';
+  document.getElementById('ops-jam-mulai').value='';
+  document.getElementById('ops-jam-akhir').value='';
+  document.getElementById('ops-km-awal-pool').value='';
+  document.getElementById('ops-km-akhir-pool').value='';
+  document.getElementById('ops-km-awal-halte').value='';
+  document.getElementById('ops-km-akhir-halte').value='';
+  document.getElementById('ops-bbm').value='';
+  document.getElementById('ops-rit').value='';
+  document.getElementById('ops-km-tempuh').value='';
+  document.getElementById('ops-ratio').value='';
+  document.getElementById('ops-ket').value='';
+  document.getElementById('modal-ops-title').textContent='Input Operasional';
+  openModal('modal-ops');
+}
 function openModal(id) {
   if (id === 'modal-bbm') { populateLambDropdowns(); populateSpbuDropdowns(); }
   if (id === 'modal-ops') { populateLambDropdowns(); }
@@ -595,8 +618,9 @@ async function loadBBM() {
   setLoading('tbody-bbm', 12);
   var r = await fetchAll('bbm', 'tgl', false);
   if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
-  DB.bbm = r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};});
+  DB.bbm = r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket,status:d.status||'pending'};});
   renderBBM();
+  renderAntrian();
   applyFreeze('tbl-bbm');
 }
 async function saveBBM() {
@@ -612,13 +636,17 @@ async function saveBBM() {
 }
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
-  if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
+  if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
   tbody.innerHTML=DB.bbm.map(function(r,i){
+    var statusHtml = r.status==='approved'
+      ? '<span class="badge-approved"><i class="fas fa-check-circle"></i> Approved</span>'
+      : '<span class="badge-pending"><i class="fas fa-clock"></i> Pending</span>';
     return '<tr>'
       +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td><td><strong>'+r.lambung+'</strong></td><td>'+r.jalur+'</td><td>'+r.nopol+'</td>'
       +'<td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td>'
       +'<td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td>'
+      +'<td style="text-align:center;">'+statusHtml+'</td>'
       +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBM('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBM('+i+')"><i class="fas fa-trash"></i></button></div></td>'
       +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bbm&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
@@ -725,9 +753,72 @@ async function loadOps() {
   setLoading('tbody-ops',17);
   var r=await fetchAll('operasional','tgl',false);
   if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
-  DB.ops=r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
+  DB.ops=r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket,bbmId:d.bbm_id};});
   renderOps();
+  renderAntrian();
   applyFreeze('tbl-ops');
+}
+// ============================================================
+// ANTRIAN BBM → OPS
+// ============================================================
+function renderAntrian() {
+  var container = document.getElementById('antrian-container');
+  if (!container) return;
+  // BBM yang statusnya pending
+  var antrian = DB.bbm.filter(function(r){ return r.status === 'pending'; });
+  antrian.sort(function(a,b){ return a.tgl < b.tgl ? -1 : a.tgl > b.tgl ? 1 : 0; });
+  if (!antrian.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:24px;"><i class="fas fa-check-double" style="font-size:2rem;color:#38a169;"></i><p style="margin-top:8px;color:#38a169;font-weight:600;">Semua data BBM sudah diproses!</p></div>';
+    return;
+  }
+  var html = '<table id="tbl-antrian" style="font-size:12px;"><thead><tr>'
+    + '<th style="width:40px;text-align:center;">No.</th>'
+    + '<th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th>'
+    + '<th>Waktu Isi</th><th>Nominal BBM</th><th>SPBU</th><th>Aksi</th>'
+    + '</tr></thead><tbody>';
+  antrian.forEach(function(r, i) {
+    html += '<tr>'
+      + '<td style="text-align:center;font-weight:700;color:var(--green-dark);">'+(i+1)+'</td>'
+      + '<td>'+r.tgl+'</td>'
+      + '<td><strong>'+r.lambung+'</strong></td>'
+      + '<td>'+(r.jalur||'-')+'</td>'
+      + '<td>'+(r.nopol||'-')+'</td>'
+      + '<td>'+(r.waktu||'-')+'</td>'
+      + '<td>Rp '+Number(r.nominal).toLocaleString('id-ID')+'</td>'
+      + '<td>'+(r.spbu||'-')+'</td>'
+      + '<td><button class="btn btn-primary btn-sm" onclick="isiDariAntrian(''+r.id+'')">'
+      + '<i class="fas fa-clipboard-check"></i> Isi Data</button></td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function isiDariAntrian(bbmId) {
+  var bbmRec = DB.bbm.find(function(r){ return r.id === bbmId; });
+  if (!bbmRec) return toast('Data BBM tidak ditemukan!', true);
+  pendingBBMId = bbmId;
+  editIdx.ops = -1;
+  populateLambDropdowns();
+  // Pre-fill form ops dari data BBM
+  document.getElementById('ops-tgl').value = bbmRec.tgl;
+  document.getElementById('ops-lambung').value = bbmRec.lambung;
+  autofillOps();
+  // Set bbm nominal
+  document.getElementById('ops-bbm').value = bbmRec.nominal || '';
+  // Reset field lain
+  document.getElementById('ops-jam-mulai').value = '';
+  document.getElementById('ops-jam-akhir').value = '';
+  document.getElementById('ops-km-awal-pool').value = '';
+  document.getElementById('ops-km-akhir-pool').value = '';
+  document.getElementById('ops-km-awal-halte').value = '';
+  document.getElementById('ops-km-akhir-halte').value = '';
+  document.getElementById('ops-rit').value = '';
+  document.getElementById('ops-km-tempuh').value = '';
+  document.getElementById('ops-ratio').value = '';
+  document.getElementById('ops-ket').value = '';
+  document.getElementById('modal-ops-title').textContent = 'Input Operasional — Lambung '+bbmRec.lambung+' ('+bbmRec.tgl+')';
+  openModal('modal-ops');
 }
 async function saveOps() {
   var tgl=document.getElementById('ops-tgl').value,lamb=document.getElementById('ops-lambung').value;
@@ -742,18 +833,26 @@ async function saveOps() {
   if(kmKP>0&&kmAP>0){kmTempuh=parseFloat((kmKP-kmAP).toFixed(1));}
   else if(kmKH>0&&kmAH>0){kmTempuh=parseFloat((kmKH-kmAH).toFixed(1));}
   if(kmTempuh&&bbmVal>0){ratio=parseFloat((kmTempuh/(bbmVal/6800)).toFixed(2));}
-  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('ops-jalur').value,nopol:document.getElementById('ops-nopol').value,jam_mulai:jm||null,jam_akhir:ja||null,km_awal_pool:parseFloat(document.getElementById('ops-km-awal-pool').value)||null,km_akhir_pool:parseFloat(document.getElementById('ops-km-akhir-pool').value)||null,km_awal_halte:parseFloat(document.getElementById('ops-km-awal-halte').value)||null,km_akhir_halte:parseFloat(document.getElementById('ops-km-akhir-halte').value)||null,bbm_rp:bbmVal,rit:parseInt(document.getElementById('ops-rit').value)||0,km_tempuh:kmTempuh,ratio:ratio,ket:document.getElementById('ops-ket').value};
+  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('ops-jalur').value,nopol:document.getElementById('ops-nopol').value,jam_mulai:jm||null,jam_akhir:ja||null,km_awal_pool:parseFloat(document.getElementById('ops-km-awal-pool').value)||null,km_akhir_pool:parseFloat(document.getElementById('ops-km-akhir-pool').value)||null,km_awal_halte:parseFloat(document.getElementById('ops-km-awal-halte').value)||null,km_akhir_halte:parseFloat(document.getElementById('ops-km-akhir-halte').value)||null,bbm_rp:bbmVal,rit:parseInt(document.getElementById('ops-rit').value)||0,km_tempuh:kmTempuh,ratio:ratio,ket:document.getElementById('ops-ket').value,bbm_id:pendingBBMId||null};
   var res;
   if(editIdx.ops>=0){res=await db.from('operasional').update(row).eq('id',DB.ops[editIdx.ops].id);if(!res.error)toast('Data operasional diperbarui!');}
   else{res=await db.from('operasional').insert(row);if(!res.error)toast('Data operasional disimpan!');}
   if(res.error)return toast('Error: '+res.error.message,true);
-  closeModal('modal-ops');loadOps();updateDashboard();
+  // Jika dari antrian BBM, update status bbm jadi approved
+  if(pendingBBMId) {
+    await db.from('bbm').update({status:'approved'}).eq('id',pendingBBMId);
+    pendingBBMId = null;
+  }
+  closeModal('modal-ops');loadOps();loadBBM();renderAntrian();updateDashboard();
 }
 function renderOps() {
   var tbody=document.getElementById('tbody-ops');
-  if(!DB.ops.length){tbody.innerHTML='<tr><td colspan="17"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
+  if(!DB.ops.length){tbody.innerHTML='<tr><td colspan="18"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
   tbody.innerHTML=DB.ops.map(function(r,i){
     function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
+    var statusHtml = r.bbmId
+      ? '<span class="badge-approved"><i class="fas fa-check-circle"></i> Approved</span>'
+      : '<span class="badge-manual"><i class="fas fa-pencil-alt"></i> Manual</span>';
     return '<tr>'
       +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td>'
@@ -771,6 +870,7 @@ function renderOps() {
       +'<td><strong>'+(r.kmTempuh ? Number(r.kmTempuh).toLocaleString('id-ID')+' Km' : '-')+'</strong></td>'
       +'<td>'+(r.ratio||'-')+'</td>'
       +'<td>'+(r.ket||'-')+'</td>'
+      +'<td style="text-align:center;">'+statusHtml+'</td>'
       +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOps('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOps('+i+')"><i class="fas fa-trash"></i></button></div></td>'
       +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;ops&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
@@ -785,7 +885,7 @@ function editOps(i) {
   document.getElementById('ops-bbm').value=r.bbm||'';document.getElementById('ops-rit').value=r.rit||'';
   document.getElementById('ops-km-tempuh').value=r.kmTempuh||'';document.getElementById('ops-ratio').value=r.ratio||'';
   document.getElementById('ops-ket').value=r.ket||'';
-  document.getElementById('modal-ops-title').textContent='Edit Data Operasional';openModal('modal-ops');
+  pendingBBMId=null;document.getElementById('modal-ops-title').textContent='Edit Data Operasional';openModal('modal-ops');
 }
 async function delOps(i) {
   if(!confirm('Hapus data operasional ini?'))return;
