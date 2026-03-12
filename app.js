@@ -786,13 +786,17 @@ function renderAntrian() {
       + '<td>'+(r.waktu||'-')+'</td>'
       + '<td>Rp '+Number(r.nominal).toLocaleString('id-ID')+'</td>'
       + '<td>'+(r.spbu||'-')+'</td>'
-      + '<td><button class="btn btn-primary btn-sm" onclick="isiDariAntrian(''+r.id+'')">'
-      + '<i class="fas fa-clipboard-check"></i> Isi Data</button></td>'
+      + '<td><button class="btn btn-primary btn-sm" onclick="window._isiAntrian(this)" data-bbmid="' + r.id + '">' + '<i class="fas fa-clipboard-check"></i> Isi Data</button></td>'
       + '</tr>';
   });
   html += '</tbody></table>';
   container.innerHTML = html;
 }
+
+window._isiAntrian = function(btn) {
+  var bbmId = btn.getAttribute('data-bbmid');
+  isiDariAntrian(bbmId);
+};
 
 function isiDariAntrian(bbmId) {
   var bbmRec = DB.bbm.find(function(r){ return r.id === bbmId; });
