@@ -675,14 +675,9 @@ async function loadBBM() {
   setLoading('tbody-bbm', 12);
   var r = await fetchAll('bbm', 'tgl', false);
   if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
-  // Kumpulkan bbm_id yang sudah ada di operasional untuk fallback data lama
-  var opsUsedIds = {};
-  DB.ops.forEach(function(o){ if(o.bbmId) opsUsedIds[o.bbmId] = true; });
   DB.bbm = r.data.map(function(d){
-    // Fallback: jika kolom status belum ada di DB atau null,
-    // cek apakah bbm_id sudah ada di operasional → anggap approved
-    var status = d.status || (opsUsedIds[d.id] ? 'approved' : 'pending');
-    return {id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket,status:status};
+    // Semua ID di-cast ke String agar perbandingan === konsisten dengan bbmId di DB.ops
+    return {id:String(d.id),tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket,status:d.status||'pending'};
   });
   DB_FILTER.bbm = null;
   renderBBM();
@@ -709,7 +704,9 @@ async function saveBBM() {
   if (editIdx.bbm>=0){res=await db.from('bbm').update(row).eq('id',DB.bbm[editIdx.bbm].id);if(!res.error)toast('Data BBM diperbarui!');}
   else{res=await db.from('bbm').insert(row);if(!res.error)toast('Data BBM disimpan!');}
   if(res.error)return toast('Error: '+res.error.message,true);
-  closeModal('modal-bbm'); loadBBM(); updateDashboard();
+  closeModal('modal-bbm');
+  // Setelah BBM disimpan: reload keduanya agar tabel Ops ikut sync (nilai BBM & status)
+  Promise.all([loadBBM(), loadOps()]).then(function(){ renderAntrian(); updateDashboard(); });
 }
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
@@ -717,10 +714,11 @@ function renderBBM() {
   if(!arr.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
   // Kumpulkan bbm_id yang sudah dipakai di operasional (double check)
   var usedBbmIds={};
-  DB.ops.forEach(function(o){if(o.bbmId)usedBbmIds[o.bbmId]=true;});
+  DB.ops.forEach(function(o){if(o.bbmId)usedBbmIds[String(o.bbmId)]=true;});
   tbody.innerHTML=arr.map(function(r,i){
-    // Status "selesai" = BBM status approved DAN ada ops yang terhubung
-    var isApproved = (r.status === 'approved') || usedBbmIds[r.id];
+    // Status "selesai" = ada di ops (usedBbmIds) ATAU status field = approved
+    // usedBbmIds adalah sumber kebenaran utama karena dihitung live dari DB.ops
+    var isApproved = !!usedBbmIds[String(r.id)] || (r.status === 'approved');
     var statusHtml = isApproved
       ? '<span class="badge-approved"><i class="fas fa-check-circle"></i> Selesai</span>'
       : '<span class="badge-pending"><i class="fas fa-clock"></i> Pending</span>';
@@ -755,8 +753,9 @@ async function delBBMById(id) {
     var res=await db.from('bbm').delete().eq('id',id);
     if(res.error)return toast('Gagal hapus: '+res.error.message,true);
     // Update local state: ops yang terhubung ke BBM ini → hapus bbmId-nya
-    DB.ops.forEach(function(o){ if(o.bbmId === id) o.bbmId = null; });
-    toast('Data BBM dihapus.');loadBBM();loadOps();renderAntrian();updateDashboard();
+    DB.ops.forEach(function(o){ if(String(o.bbmId) === String(id)) o.bbmId = null; });
+    toast('Data BBM dihapus.');
+    Promise.all([loadBBM(), loadOps()]).then(function(){ renderAntrian(); updateDashboard(); });
   } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
 }
 
@@ -845,7 +844,7 @@ async function loadOps() {
   setLoading('tbody-ops',17);
   var r=await fetchAll('operasional','tgl',false);
   if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
-  DB.ops=r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket,bbmId:d.bbm_id};});
+  DB.ops=r.data.map(function(d){return{id:String(d.id),tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket,bbmId:d.bbm_id?String(d.bbm_id):null};});
   DB_FILTER.ops = null;
   renderOps();
   renderAntrian();
@@ -859,12 +858,11 @@ function renderAntrian() {
   if (!container) return;
   // Kumpulkan semua bbm_id yang sudah punya pasangan di operasional (approved)
   var usedBbmIds = {};
-  DB.ops.forEach(function(o){ if(o.bbmId) usedBbmIds[o.bbmId] = true; });
-  // BBM yang belum selesai: belum ada di ops DAN status masih pending
+  DB.ops.forEach(function(o){ if(o.bbmId) usedBbmIds[String(o.bbmId)] = true; });
+  // BBM yang belum selesai = tidak ada di usedBbmIds (sumber kebenaran: DB.ops live)
+  // Jika kolom status ada, ikut sertakan juga sebagai secondary check
   var antrian = DB.bbm.filter(function(r){
-    var sudahOps = usedBbmIds[r.id];
-    var sudahApproved = r.status === 'approved';
-    return !sudahOps && !sudahApproved;
+    return !usedBbmIds[r.id] && r.status !== 'approved';
   });
   antrian.sort(function(a,b){ return a.tgl < b.tgl ? -1 : a.tgl > b.tgl ? 1 : 0; });
   if (!antrian.length) {
@@ -899,7 +897,7 @@ window._isiAntrian = function(btn) {
 };
 
 function isiDariAntrian(bbmId) {
-  var bbmRec = DB.bbm.find(function(r){ return r.id === bbmId; });
+  var bbmRec = DB.bbm.find(function(r){ return String(r.id) === String(bbmId); });
   if (!bbmRec) return toast('Data BBM tidak ditemukan!', true);
   pendingBBMId = bbmId;
   editIdx.ops = -1;
@@ -963,29 +961,31 @@ async function saveOps() {
   if(pendingBBMId){
     await db.from('bbm').update({status:'approved'}).eq('id',pendingBBMId);
     // Update local DB juga agar tidak perlu reload penuh
-    var bbmIdx = DB.bbm.findIndex(function(b){ return b.id === pendingBBMId; });
+    var bbmIdx = DB.bbm.findIndex(function(b){ return String(b.id) === String(pendingBBMId); });
     if(bbmIdx >= 0) DB.bbm[bbmIdx].status = 'approved';
   }
   // Reset pendingBBMId setelah save
   pendingBBMId = null;
-  closeModal('modal-ops');loadOps();loadBBM();renderAntrian();updateDashboard();
+  closeModal('modal-ops');
+  // Tunggu keduanya selesai baru renderAntrian agar data sinkron
+  Promise.all([loadOps(), loadBBM()]).then(function(){ renderAntrian(); updateDashboard(); });
 }
 function renderOps() {
   var tbody=document.getElementById('tbody-ops');
   var arr = DB_FILTER.ops !== null ? DB_FILTER.ops : DB.ops;
   if(!arr.length){tbody.innerHTML='<tr><td colspan="18"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
-  // Kumpulkan bbm.status dari DB.bbm untuk cross-check
-  var bbmStatusMap = {};
-  DB.bbm.forEach(function(b){ bbmStatusMap[b.id] = b.status || 'pending'; });
+  // Kumpulkan bbm.id yang statusnya approved (dari status field atau dari DB.ops)
+  var approvedBbmIds = {};
+  DB.bbm.forEach(function(b){ if(b.status === 'approved') approvedBbmIds[b.id] = true; });
+  // Juga masukkan semua bbm_id yang ada di ops sebagai approved (live fallback)
+  arr.forEach(function(o){ if(o.bbmId) approvedBbmIds[o.bbmId] = true; });
   tbody.innerHTML=arr.map(function(r,i){
     function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
-    // Selesai = ops punya bbm_id DAN bbm yang terhubung sudah approved
-    var isSelesai = r.bbmId && (bbmStatusMap[r.bbmId] === 'approved' || bbmStatusMap[r.bbmId] === undefined);
+    // Selesai = ops punya bbm_id (terhubung ke BBM) - keduanya sudah diisi
+    var isSelesai = !!r.bbmId;
     var statusHtml = isSelesai
       ? '<span class="badge-approved"><i class="fas fa-check-circle"></i> Selesai</span>'
-      : r.bbmId
-        ? '<span class="badge-pending" style="background:#fff3cd;color:#856404;border-color:#ffc107;"><i class="fas fa-link"></i> Terhubung</span>'
-        : '<span class="badge-manual"><i class="fas fa-pencil-alt"></i> Manual</span>';
+      : '<span class="badge-manual"><i class="fas fa-pencil-alt"></i> Manual</span>';
     return '<tr>'
       +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td>'+r.tgl+'</td>'
@@ -1028,7 +1028,7 @@ async function delOpsById(id) {
   if(!confirm('Hapus data operasional ini?'))return;
   try {
     // Cari ops yang akan dihapus untuk tahu bbm_id-nya
-    var opsRec = DB.ops.find(function(r){ return r.id == id; });
+    var opsRec = DB.ops.find(function(r){ return String(r.id) === String(id); });
     var linkedBbmId = opsRec ? opsRec.bbmId : null;
     var res=await db.from('operasional').delete().eq('id',id);
     if(res.error)return toast('Gagal hapus: '+res.error.message,true);
@@ -1038,7 +1038,8 @@ async function delOpsById(id) {
       var bbmIdx = DB.bbm.findIndex(function(b){ return b.id === linkedBbmId; });
       if(bbmIdx >= 0) DB.bbm[bbmIdx].status = 'pending';
     }
-    toast('Data operasional dihapus.');loadOps();loadBBM();renderAntrian();updateDashboard();
+    toast('Data operasional dihapus.');
+    Promise.all([loadOps(), loadBBM()]).then(function(){ renderAntrian(); updateDashboard(); });
   } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
 }
 
