@@ -92,6 +92,15 @@
     <button data-page="lap-ops" class="nav-item" onclick="goPage('lap-ops')">
       <span class="icon"><i class="fas fa-chart-line"></i></span> Laporan Operasional
     </button>
+    <button data-page="lap-gabungan" class="nav-item" onclick="goPage('lap-gabungan')" data-perm-menu="lap-gabungan">
+      <span class="icon"><i class="fas fa-layer-group"></i></span> Laporan Gabungan
+    </button>
+    <button data-page="lap-harian" class="nav-item" onclick="goPage('lap-harian')" data-perm-menu="lap-harian">
+      <span class="icon"><i class="fas fa-calendar-day"></i></span> Laporan Harian
+    </button>
+    <button data-page="lap-efisiensi" class="nav-item" onclick="goPage('lap-efisiensi')" data-perm-menu="lap-efisiensi">
+      <span class="icon"><i class="fas fa-bolt"></i></span> Analitik Efisiensi
+    </button>
   </div>
 
   <div class="sidebar-section" id="sidebar-akun" style="display:none">
@@ -154,6 +163,10 @@
           <div class="stats-mini-item">
             <div class="val" id="banner-ops">0</div>
             <div class="lbl">Operasi Hari Ini</div>
+          </div>
+          <div class="stats-mini-item">
+            <div class="val" id="banner-pending" style="color:#d97706;">0</div>
+            <div class="lbl">⚠ BBM Pending</div>
           </div>
         </div>
       </div>
@@ -415,6 +428,71 @@
         </div>
       </div>
       <div id="result-lap-ops"></div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- LAPORAN GABUNGAN                              -->
+    <!-- ══════════════════════════════════════════════ -->
+    <div class="page" id="page-lap-gabungan">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div><h2>Laporan Gabungan BBM + Operasional</h2><p>Rekap per bus: BBM, KM tempuh, rasio efisiensi</p></div>
+      </div>
+      <div class="filter-card">
+        <h4><i class="fas fa-filter"></i> Filter Laporan</h4>
+        <div class="filter-grid">
+          <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="lg-tgl-mulai"></div>
+          <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="lg-tgl-akhir"></div>
+          <div class="form-group"><label>No. Lambung</label><select id="lg-lamb"><option value="">Semua Lambung</option></select></div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-primary" onclick="generateLapGabungan()"><i class="fas fa-search"></i> Tampilkan</button>
+        </div>
+      </div>
+      <div id="result-lap-gabungan"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- LAPORAN HARIAN                                -->
+    <!-- ══════════════════════════════════════════════ -->
+    <div class="page" id="page-lap-harian">
+      <div class="section-header">
+        <div class="section-icon">📅</div>
+        <div><h2>Laporan Harian Armada</h2><p>Ringkasan aktivitas per tanggal — selesai vs pending</p></div>
+      </div>
+      <div class="filter-card">
+        <h4><i class="fas fa-filter"></i> Filter Periode</h4>
+        <div class="filter-grid">
+          <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="lh-tgl-mulai"></div>
+          <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="lh-tgl-akhir"></div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-primary" onclick="generateLapHarian()"><i class="fas fa-search"></i> Tampilkan</button>
+        </div>
+      </div>
+      <div id="result-lap-harian"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- ANALITIK EFISIENSI                            -->
+    <!-- ══════════════════════════════════════════════ -->
+    <div class="page" id="page-lap-efisiensi">
+      <div class="section-header">
+        <div class="section-icon">⚡</div>
+        <div><h2>Analitik Efisiensi Armada</h2><p>Ranking efisiensi bahan bakar per bus — km/liter</p></div>
+      </div>
+      <div class="filter-card">
+        <h4><i class="fas fa-filter"></i> Filter Periode</h4>
+        <div class="filter-grid">
+          <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="le-tgl-mulai"></div>
+          <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="le-tgl-akhir"></div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-primary" onclick="generateLapEfisiensi()"><i class="fas fa-search"></i> Tampilkan</button>
+        </div>
+      </div>
+      <div id="result-lap-efisiensi"></div>
     </div>
 
     <div class="page" id="page-kelola-akun">
