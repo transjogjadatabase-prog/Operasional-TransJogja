@@ -502,6 +502,11 @@ async function deleteByIds(tblName, ids) {
   var errors = [];
   for (var i = 0; i < ids.length; i++) {
     try {
+      // Jika hapus BBM: putus dulu referensi bbm_id di operasional (set null)
+      // agar tidak kena foreign key constraint 409 Conflict
+      if (tblName === 'bbm') {
+        await db.from('operasional').update({ bbm_id: null }).eq('bbm_id', ids[i]);
+      }
       var res = await db.from(tblName).delete().eq('id', ids[i]);
       if (res.error) errors.push(res.error.message);
     } catch(e) {
@@ -724,9 +729,11 @@ function editBBMById(id) {
 async function delBBMById(id) {
   if(!confirm('Hapus data BBM ini?'))return;
   try {
+    // Putus referensi bbm_id di operasional dulu (hindari 409 FK constraint)
+    await db.from('operasional').update({ bbm_id: null }).eq('bbm_id', id);
     var res=await db.from('bbm').delete().eq('id',id);
     if(res.error)return toast('Gagal hapus: '+res.error.message,true);
-    toast('Data BBM dihapus.');loadBBM();updateDashboard();
+    toast('Data BBM dihapus.');loadBBM();loadOps();updateDashboard();
   } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
 }
 
