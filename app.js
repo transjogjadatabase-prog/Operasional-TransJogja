@@ -21,6 +21,9 @@ const ALL_MENUS = [
   { key:'lap-bbm-waktu', label:'Laporan Waktu BBM' },
   { key:'lap-bbm',       label:'Laporan BBM' },
   { key:'lap-ops',       label:'Laporan Operasional' },
+  { key:'lap-gabungan',  label:'Laporan Gabungan' },
+  { key:'lap-harian',    label:'Laporan Harian' },
+  { key:'lap-efisiensi', label:'Analitik Efisiensi' },
 ];
 const ALL_ACTIONS = [
   { key:'tambah', label:'Tambah' },
@@ -32,8 +35,8 @@ const ALL_ACTIONS = [
 // Default permissions per role
 function defaultPerms(role) {
   if (role === 'admin') return { menus: ALL_MENUS.map(m=>m.key), actions: ALL_ACTIONS.map(a=>a.key) };
-  if (role === 'staf')  return { menus: ['dashboard','input-bbm','input-ops','lap-bbm','lap-ops','lap-bbm-waktu'], actions: ['tambah','edit','export'] };
-  return { menus: ['dashboard','lap-bbm','lap-ops'], actions: ['export'] }; // guest
+  if (role === 'staf')  return { menus: ['dashboard','input-bbm','input-ops','lap-bbm','lap-ops','lap-bbm-waktu','lap-gabungan','lap-harian','lap-efisiensi'], actions: ['tambah','edit','export'] };
+  return { menus: ['dashboard','lap-bbm','lap-ops','lap-gabungan','lap-harian','lap-efisiensi'], actions: ['export'] }; // guest
 }
 
 // ============ SIDEBAR ============
@@ -75,6 +78,9 @@ const pageTitles = {
   'lap-bbm-waktu': 'Laporan Waktu Pengisian BBM',
   'lap-bbm':       'Laporan BBM',
   'lap-ops':       'Laporan Operasional',
+  'lap-gabungan':  'Laporan Gabungan BBM + Operasional',
+  'lap-harian':    'Laporan Harian Armada',
+  'lap-efisiensi': 'Analitik Efisiensi Armada',
   'kelola-akun':   'Kelola Akun'
 };
 function goPage(id) {
@@ -97,6 +103,9 @@ function goPage(id) {
   if (id === 'lap-bbm-waktu') populateSpbuFilter();
   if (id === 'lap-bbm')       populateLambFilter('lb-lamb');
   if (id === 'lap-ops')       populateLambFilter('lo-lamb');
+  if (id === 'lap-gabungan')  { populateLambFilter('lg-lamb'); Promise.all([loadBBM(),loadOps()]).then(generateLapGabungan); }
+  if (id === 'lap-harian')    Promise.all([loadBBM(),loadOps()]).then(generateLapHarian);
+  if (id === 'lap-efisiensi') Promise.all([loadBBM(),loadOps()]).then(generateLapEfisiensi);
   if (id === 'kelola-akun')   loadAkun();
   // Apply freeze ke tabel yang sudah ada di DOM
   setTimeout(applyFreeze, 50);
@@ -1121,22 +1130,11 @@ function renderBBMRows(rows) {
   return'<div class="table-outer"><table><thead><tr><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal</th><th>SPBU</th><th>Halte</th></tr></thead><tbody>'+rows.map(function(r){return'<tr><td>'+r.tgl+'</td><td>'+r.lambung+'</td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td><td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td></tr>';}).join('')+'</tbody></table></div>';
 }
 function generateLapBBM() {
-  // === DIAGNOSTIC ===
-  var _d98 = DB.bbm.filter(function(r){ return String(r.lambung).trim()==='98'; });
-  console.warn('=== DIAGNOSTIC DB.bbm lambung 98 ===');
-  console.warn('Total records lambung 98:', _d98.length);
-  _d98.forEach(function(r,i){ console.warn(i, '| tgl:', r.tgl, '| nominal:', r.nominal, '| id:', r.id); });
-  console.warn('Total DB.bbm:', DB.bbm.length);
-  // === END DIAGNOSTIC ===
   var tglM=document.getElementById('lb-tgl-mulai').value,tglA=document.getElementById('lb-tgl-akhir').value,lambF=document.getElementById('lb-lamb').value;
   var data=DB.bbm.slice();if(tglM)data=data.filter(function(r){return String(r.tgl).substring(0,10)>=tglM;});if(tglA)data=data.filter(function(r){return String(r.tgl).substring(0,10)<=tglA;});if(lambF)data=data.filter(function(r){return String(r.lambung).trim()===lambF;});
   var el=document.getElementById('result-lap-bbm');
   if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
   data=data.map(function(r){r.tgl=String(r.tgl).substring(0,10);r.lambung=String(r.lambung).trim();return r;});var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort(),dates=[...new Set(data.map(function(r){return r.tgl;}))].sort();
-  // DEBUG: log semua record per lambung per tanggal
-  console.log('=== DEBUG LAP BBM ===');
-  console.log('Total records setelah filter:', data.length);
-  data.forEach(function(r){ console.log('tgl:', JSON.stringify(r.tgl), '| lambung:', JSON.stringify(r.lambung), '| nominal:', r.nominal, '| tglLen:', String(r.tgl).length); });
   var tot=data.reduce(function(s,r){return s+Number(r.nominal);},0);
   var html='<div class="card"><div class="card-header"><div class="card-title">Laporan BBM Harian</div></div><div class="table-outer"><table><thead><tr><th class="freeze-col">Lambung</th>'+dates.map(function(d){return'<th>'+d+'</th>';}).join('')+'<th>TOTAL</th></tr></thead><tbody>';
   lambs.forEach(function(lamb){var rowTot=0;html+='<tr><td class="freeze-col" style="position:sticky;left:0;background:#fff;z-index:2;"><strong>'+lamb+'</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.lambung===lamb&&r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);rowTot+=s;html+='<td>'+(s?'Rp '+s.toLocaleString():'-')+'</td>';});html+='<td><strong>Rp '+rowTot.toLocaleString()+'</strong></td></tr>';});
@@ -1154,6 +1152,364 @@ function generateLapOps() {
   var rows=lambs.map(function(lamb){var items=data.filter(function(r){return r.lambung===lamb;});var jalur=items[0]?items[0].jalur:'-';var totalJam=items.reduce(function(s,r){return s+(Number(r.kmTempuh)||0);},0);var totalBBM=items.reduce(function(s,r){return s+(Number(r.bbm)||0);},0);var totalRit=items.reduce(function(s,r){return s+(Number(r.rit)||0);},0);var liter=totalBBM/6800;var ratio=liter>0?(totalJam/liter).toFixed(2):'-';return{lamb:lamb,jalur:jalur,totalJam:totalJam,totalBBM:totalBBM,liter:liter.toFixed(2),ratio:ratio,totalRit:totalRit};});
   var gBBM=rows.reduce(function(s,r){return s+r.totalBBM;},0),gRit=rows.reduce(function(s,r){return s+r.totalRit;},0);
   el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">Rekapitulasi Operasional</div></div><div class="report-summary"><div class="sum-card"><div class="val">'+rows.length+'</div><div class="lbl">Lambung</div></div><div class="sum-card"><div class="val">'+gRit+'</div><div class="lbl">Total Ritase</div></div><div class="sum-card"><div class="val">Rp '+gBBM.toLocaleString()+'</div><div class="lbl">Total BBM (Rp)</div></div><div class="sum-card"><div class="val">'+( gBBM/6800).toFixed(1)+' L</div><div class="lbl">Total BBM (L)</div></div></div><div class="table-outer"><table><thead><tr><th>Lambung</th><th>Jalur</th><th>Total Jam (mnt)</th><th>BBM (L)</th><th>Rasio</th><th>Total BBM (Rp)</th><th>Total Ritase</th></tr></thead><tbody>'+rows.map(function(r){return'<tr><td><strong>'+r.lamb+'</strong></td><td>'+r.jalur+'</td><td>'+r.totalJam+'</td><td>'+r.liter+'</td><td>'+r.ratio+'</td><td>Rp '+r.totalBBM.toLocaleString()+'</td><td>'+r.totalRit+'</td></tr>';}).join('')+'<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td colspan="2"><strong style="color:var(--green-dark);">TOTAL</strong></td><td><strong style="color:var(--green-dark);">'+rows.reduce(function(s,r){return s+r.totalJam;},0)+'</strong></td><td><strong style="color:var(--green-dark);">'+(gBBM/6800).toFixed(2)+'</strong></td><td>-</td><td><strong style="color:var(--green-dark);">Rp '+gBBM.toLocaleString()+'</strong></td><td><strong style="color:var(--green-dark);">'+gRit+'</strong></td></tr></tbody></table></div></div></div>';
+}
+
+
+// ============================================================
+// LAPORAN GABUNGAN — BBM + Operasional per Bus per Periode
+// ============================================================
+function populateLapGabFilter() { populateLambFilter('lg-lamb'); }
+
+function generateLapGabungan() {
+  var tglM = document.getElementById('lg-tgl-mulai') ? document.getElementById('lg-tgl-mulai').value : '';
+  var tglA = document.getElementById('lg-tgl-akhir') ? document.getElementById('lg-tgl-akhir').value : '';
+  var lambF = document.getElementById('lg-lamb') ? document.getElementById('lg-lamb').value : '';
+  var el = document.getElementById('result-lap-gabungan');
+  if (!el) return;
+
+  var bbmData = DB.bbm.slice();
+  var opsData = DB.ops.slice();
+  if (tglM) { bbmData = bbmData.filter(function(r){ return r.tgl >= tglM; }); opsData = opsData.filter(function(r){ return r.tgl >= tglM; }); }
+  if (tglA) { bbmData = bbmData.filter(function(r){ return r.tgl <= tglA; }); opsData = opsData.filter(function(r){ return r.tgl <= tglA; }); }
+  if (lambF) { bbmData = bbmData.filter(function(r){ return String(r.lambung).trim() === lambF; }); opsData = opsData.filter(function(r){ return String(r.lambung).trim() === lambF; }); }
+
+  if (!bbmData.length && !opsData.length) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data untuk periode ini</p></div></div>'; return;
+  }
+
+  // Kumpulkan semua lambung yang muncul di kedua tabel
+  var lambSet = {};
+  bbmData.forEach(function(r){ lambSet[String(r.lambung).trim()] = true; });
+  opsData.forEach(function(r){ lambSet[String(r.lambung).trim()] = true; });
+  var lambs = Object.keys(lambSet).sort(function(a,b){ return Number(a)-Number(b) || a.localeCompare(b); });
+
+  var rows = lambs.map(function(lamb) {
+    var bRows = bbmData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var oRows = opsData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var totalBBMRp = bRows.reduce(function(s,r){ return s + Number(r.nominal||0); }, 0);
+    var totalLiter = totalBBMRp / 6800;
+    var totalKm    = oRows.reduce(function(s,r){ return s + Number(r.kmTempuh||0); }, 0);
+    var totalRit   = oRows.reduce(function(s,r){ return s + Number(r.rit||0); }, 0);
+    var rasio      = totalLiter > 0 ? (totalKm / totalLiter).toFixed(2) : '-';
+    var jalur      = (bRows[0] || oRows[0] || {}).jalur || '-';
+    var nopol      = (bRows[0] || oRows[0] || {}).nopol || '-';
+    // Status selesai = ada data di keduanya
+    var status = (bRows.length > 0 && oRows.length > 0) ? 'selesai' : bRows.length > 0 ? 'no-ops' : 'no-bbm';
+    var hariOps = [...new Set(oRows.map(function(r){ return r.tgl; }))].length;
+    return { lamb, jalur, nopol, totalBBMRp, totalLiter: totalLiter.toFixed(2), totalKm, totalRit, rasio, status, hariOps, bCount: bRows.length, oCount: oRows.length };
+  });
+
+  // Summary cards
+  var totalBus    = rows.length;
+  var busSelesai  = rows.filter(function(r){ return r.status === 'selesai'; }).length;
+  var grandBBM    = rows.reduce(function(s,r){ return s + r.totalBBMRp; }, 0);
+  var grandKm     = rows.reduce(function(s,r){ return s + r.totalKm; }, 0);
+  var grandRit    = rows.reduce(function(s,r){ return s + r.totalRit; }, 0);
+  var grandLiter  = grandBBM / 6800;
+  var grandRasio  = grandLiter > 0 ? (grandKm / grandLiter).toFixed(2) : '-';
+
+  var statusBadge = function(s) {
+    if (s === 'selesai') return '<span style="background:#d4edda;color:#155724;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;">✅ Lengkap</span>';
+    if (s === 'no-ops')  return '<span style="background:#fff3cd;color:#856404;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;">⚠ Belum ada Ops</span>';
+    return '<span style="background:#bee3f8;color:#2b6cb0;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;">⚠ Belum ada BBM</span>';
+  };
+
+  var rasioColor = function(r) {
+    if (r === '-') return '';
+    var v = Number(r);
+    if (v >= 5)   return 'color:#155724;font-weight:700;';
+    if (v >= 3.5) return 'color:#856404;font-weight:700;';
+    return 'color:#721c24;font-weight:700;';
+  };
+
+  var html = '<div class="report-summary" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;">'
+    + '<div class="sum-card"><div class="val">'+totalBus+'</div><div class="lbl">Total Bus</div></div>'
+    + '<div class="sum-card" style="background:#d4edda;"><div class="val" style="color:#155724;">'+busSelesai+'</div><div class="lbl">Data Lengkap</div></div>'
+    + '<div class="sum-card"><div class="val">Rp '+grandBBM.toLocaleString('id-ID')+'</div><div class="lbl">Total BBM</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandLiter.toFixed(1)+' L</div><div class="lbl">Total Liter</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandKm.toLocaleString('id-ID')+' km</div><div class="lbl">Total KM</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandRit+'</div><div class="lbl">Total Rit</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandRasio+' km/L</div><div class="lbl">Rasio Rata-rata</div></div>'
+    + '</div>';
+
+  html += '<div class="card"><div class="card-header"><div class="card-title">Detail Per Bus</div>'
+    + '<button class="btn btn-sm btn-outline" onclick="exportLapGabExcel()" style="margin-left:auto;"><i class="fas fa-file-excel"></i> Export Excel</button></div>'
+    + '<div class="table-outer"><table><thead><tr>'
+    + '<th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Hari Ops</th>'
+    + '<th>BBM (Rp)</th><th>BBM (L)</th><th>KM Tempuh</th><th>Rit</th>'
+    + '<th>Rasio km/L</th><th>Status</th>'
+    + '</tr></thead><tbody>';
+
+  rows.forEach(function(r) {
+    html += '<tr>'
+      + '<td><strong>'+r.lamb+'</strong></td>'
+      + '<td>'+r.jalur+'</td>'
+      + '<td>'+r.nopol+'</td>'
+      + '<td style="text-align:center;">'+r.hariOps+'</td>'
+      + '<td>Rp '+r.totalBBMRp.toLocaleString('id-ID')+'</td>'
+      + '<td>'+r.totalLiter+' L</td>'
+      + '<td>'+r.totalKm.toLocaleString('id-ID')+' km</td>'
+      + '<td style="text-align:center;">'+r.totalRit+'</td>'
+      + '<td style="text-align:center;'+rasioColor(r.rasio)+'">'+r.rasio+'</td>'
+      + '<td>'+statusBadge(r.status)+'</td>'
+      + '</tr>';
+  });
+
+  html += '<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);">'
+    + '<td colspan="3"><strong style="color:var(--green-dark);">TOTAL</strong></td>'
+    + '<td></td>'
+    + '<td><strong style="color:var(--green-dark);">Rp '+grandBBM.toLocaleString('id-ID')+'</strong></td>'
+    + '<td><strong style="color:var(--green-dark);">'+grandLiter.toFixed(2)+' L</strong></td>'
+    + '<td><strong style="color:var(--green-dark);">'+grandKm.toLocaleString('id-ID')+' km</strong></td>'
+    + '<td style="text-align:center;"><strong style="color:var(--green-dark);">'+grandRit+'</strong></td>'
+    + '<td style="text-align:center;"><strong style="color:var(--green-dark);">'+grandRasio+'</strong></td>'
+    + '<td></td>'
+    + '</tr>';
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+  setTimeout(applyFreeze, 10);
+
+  // Simpan ke window untuk export
+  window._lapGabRows = rows;
+  window._lapGabGrand = { grandBBM, grandLiter, grandKm, grandRit, grandRasio };
+}
+
+function exportLapGabExcel() {
+  if (!window._lapGabRows) return toast('Generate laporan dulu!', true);
+  var hdrs = ['Lambung','Jalur','No Polisi','Hari Ops','BBM (Rp)','BBM (L)','KM Tempuh','Rit','Rasio km/L','Status'];
+  var aoa = [hdrs].concat(window._lapGabRows.map(function(r){
+    return [r.lamb, r.jalur, r.nopol, r.hariOps, r.totalBBMRp, r.totalLiter, r.totalKm, r.totalRit, r.rasio,
+      r.status === 'selesai' ? 'Lengkap' : r.status === 'no-ops' ? 'Belum ada Ops' : 'Belum ada BBM'];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = hdrs.map(function(h){ return {wch: Math.max(h.length+4,14)}; });
+  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Gabungan');
+  XLSX.writeFile(wb, 'LaporanGabungan_TransJogja.xlsx');
+  toast('Export berhasil!');
+}
+
+// ============================================================
+// LAPORAN HARIAN — Ringkasan per Tanggal
+// ============================================================
+function generateLapHarian() {
+  var tglM = document.getElementById('lh-tgl-mulai') ? document.getElementById('lh-tgl-mulai').value : '';
+  var tglA = document.getElementById('lh-tgl-akhir') ? document.getElementById('lh-tgl-akhir').value : '';
+  var el = document.getElementById('result-lap-harian');
+  if (!el) return;
+
+  var bbmData = DB.bbm.slice();
+  var opsData  = DB.ops.slice();
+  if (tglM) { bbmData = bbmData.filter(function(r){ return r.tgl >= tglM; }); opsData = opsData.filter(function(r){ return r.tgl >= tglM; }); }
+  if (tglA) { bbmData = bbmData.filter(function(r){ return r.tgl <= tglA; }); opsData = opsData.filter(function(r){ return r.tgl <= tglA; }); }
+
+  var dateSet = {};
+  bbmData.forEach(function(r){ dateSet[r.tgl] = true; });
+  opsData.forEach(function(r){ dateSet[r.tgl] = true; });
+  var dates = Object.keys(dateSet).sort().reverse(); // terbaru dulu
+
+  if (!dates.length) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><i class="fas fa-calendar-times"></i><p>Tidak ada data</p></div></div>'; return;
+  }
+
+  var dayRows = dates.map(function(tgl) {
+    var bRows = bbmData.filter(function(r){ return r.tgl === tgl; });
+    var oRows = opsData.filter(function(r){ return r.tgl === tgl; });
+    var totalBBMRp = bRows.reduce(function(s,r){ return s + Number(r.nominal||0); }, 0);
+    var totalKm    = oRows.reduce(function(s,r){ return s + Number(r.kmTempuh||0); }, 0);
+    var totalRit   = oRows.reduce(function(s,r){ return s + Number(r.rit||0); }, 0);
+    var liter      = totalBBMRp / 6800;
+    var rasio      = liter > 0 && totalKm > 0 ? (totalKm / liter).toFixed(2) : '-';
+    // Bus yg ada data BBM & ops hari itu
+    var bbmLambs = [...new Set(bRows.map(function(r){ return String(r.lambung).trim(); }))];
+    var opsLambs = [...new Set(oRows.map(function(r){ return String(r.lambung).trim(); }))];
+    var selesai  = bbmLambs.filter(function(l){ return opsLambs.includes(l); }).length;
+    var pending  = bbmLambs.filter(function(l){ return !opsLambs.includes(l); }).length
+                 + opsLambs.filter(function(l){ return !bbmLambs.includes(l); }).length;
+    return { tgl, busBBM: bbmLambs.length, busOps: opsLambs.length, selesai, pending, totalBBMRp, liter: liter.toFixed(2), totalKm, totalRit, rasio };
+  });
+
+  var html = '<div class="card"><div class="card-header"><div class="card-title">Ringkasan Harian</div>'
+    + '<button class="btn btn-sm btn-outline" onclick="exportLapHarianExcel()" style="margin-left:auto;"><i class="fas fa-file-excel"></i> Export</button></div>'
+    + '<div class="table-outer"><table><thead><tr>'
+    + '<th>Tanggal</th><th>Bus BBM</th><th>Bus Ops</th>'
+    + '<th style="color:#155724;">✅ Lengkap</th><th style="color:#856404;">⚠ Pending</th>'
+    + '<th>Total BBM (Rp)</th><th>Liter</th><th>KM Tempuh</th><th>Total Rit</th><th>Rasio km/L</th>'
+    + '</tr></thead><tbody>';
+
+  dayRows.forEach(function(r) {
+    var pendBg = r.pending > 0 ? 'background:#fffbea;' : '';
+    html += '<tr style="'+pendBg+'">'
+      + '<td><strong>'+r.tgl+'</strong></td>'
+      + '<td style="text-align:center;">'+r.busBBM+'</td>'
+      + '<td style="text-align:center;">'+r.busOps+'</td>'
+      + '<td style="text-align:center;color:#155724;font-weight:700;">'+r.selesai+'</td>'
+      + '<td style="text-align:center;color:'+(r.pending>0?'#856404':'#155724')+';font-weight:700;">'+r.pending+'</td>'
+      + '<td>Rp '+r.totalBBMRp.toLocaleString('id-ID')+'</td>'
+      + '<td>'+r.liter+' L</td>'
+      + '<td>'+r.totalKm.toLocaleString('id-ID')+' km</td>'
+      + '<td style="text-align:center;">'+r.totalRit+'</td>'
+      + '<td style="text-align:center;">'+r.rasio+'</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+  window._lapHarianRows = dayRows;
+}
+
+function exportLapHarianExcel() {
+  if (!window._lapHarianRows) return toast('Generate laporan dulu!', true);
+  var hdrs = ['Tanggal','Bus BBM','Bus Ops','Lengkap','Pending','BBM (Rp)','Liter','KM','Rit','Rasio'];
+  var aoa = [hdrs].concat(window._lapHarianRows.map(function(r){
+    return [r.tgl, r.busBBM, r.busOps, r.selesai, r.pending, r.totalBBMRp, r.liter, r.totalKm, r.totalRit, r.rasio];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = hdrs.map(function(){ return {wch: 14}; });
+  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Harian');
+  XLSX.writeFile(wb, 'LaporanHarian_TransJogja.xlsx');
+  toast('Export berhasil!');
+}
+
+// ============================================================
+// ANALITIK EFISIENSI — Ranking & Highlight per Bus
+// ============================================================
+function generateLapEfisiensi() {
+  var tglM = document.getElementById('le-tgl-mulai') ? document.getElementById('le-tgl-mulai').value : '';
+  var tglA = document.getElementById('le-tgl-akhir') ? document.getElementById('le-tgl-akhir').value : '';
+  var el = document.getElementById('result-lap-efisiensi');
+  if (!el) return;
+
+  var bbmData = DB.bbm.slice();
+  var opsData  = DB.ops.slice();
+  if (tglM) { bbmData = bbmData.filter(function(r){ return r.tgl >= tglM; }); opsData = opsData.filter(function(r){ return r.tgl >= tglM; }); }
+  if (tglA) { bbmData = bbmData.filter(function(r){ return r.tgl <= tglA; }); opsData = opsData.filter(function(r){ return r.tgl <= tglA; }); }
+
+  // Hanya bus yang punya kedua data (lengkap)
+  var lambSet = {};
+  opsData.forEach(function(r){ lambSet[String(r.lambung).trim()] = true; });
+  var lambs = Object.keys(lambSet).filter(function(l){
+    return bbmData.some(function(b){ return String(b.lambung).trim() === l; });
+  }).sort(function(a,b){ return Number(a)-Number(b) || a.localeCompare(b); });
+
+  if (!lambs.length) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><i class="fas fa-chart-bar"></i><p>Belum ada data lengkap (butuh BBM + Operasional)</p></div></div>'; return;
+  }
+
+  var rows = lambs.map(function(lamb) {
+    var bRows = bbmData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var oRows = opsData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var totalBBMRp = bRows.reduce(function(s,r){ return s+Number(r.nominal||0); }, 0);
+    var liter      = totalBBMRp / 6800;
+    var totalKm    = oRows.reduce(function(s,r){ return s+Number(r.kmTempuh||0); }, 0);
+    var totalRit   = oRows.reduce(function(s,r){ return s+Number(r.rit||0); }, 0);
+    var rasio      = liter > 0 ? Number((totalKm / liter).toFixed(2)) : 0;
+    var hariOps    = [...new Set(oRows.map(function(r){ return r.tgl; }))].length;
+    var jalur      = (oRows[0]||bRows[0]||{}).jalur || '-';
+    var kmPerHari  = hariOps > 0 ? (totalKm / hariOps).toFixed(1) : 0;
+    var ritPerHari = hariOps > 0 ? (totalRit / hariOps).toFixed(1) : 0;
+    return { lamb, jalur, rasio, totalKm, totalBBMRp, liter: liter.toFixed(2), totalRit, hariOps, kmPerHari, ritPerHari };
+  }).filter(function(r){ return r.rasio > 0; });
+
+  // Sort by rasio desc untuk ranking
+  rows.sort(function(a,b){ return b.rasio - a.rasio; });
+
+  var maxRasio = rows[0] ? rows[0].rasio : 1;
+  var avgRasio = rows.length ? (rows.reduce(function(s,r){ return s+r.rasio; },0)/rows.length).toFixed(2) : '-';
+  var top3     = rows.slice(0,3);
+  var bot3     = rows.slice(-3).reverse();
+
+  var html = '';
+
+  // Panel highlight
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">';
+
+  // Top 3
+  html += '<div class="card" style="border-left:4px solid #38a169;">'
+    + '<div class="card-header"><div class="card-title" style="color:#155724;"><i class="fas fa-trophy" style="color:#f6c90e;margin-right:6px;"></i>Efisiensi Terbaik</div></div>'
+    + top3.map(function(r, i){
+        var medals = ['🥇','🥈','🥉'];
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #e2e8f0;">'
+          + '<span style="font-size:20px;">'+medals[i]+'</span>'
+          + '<div style="flex:1;">'
+          + '<div style="font-weight:700;">Lambung '+r.lamb+' <span style="font-size:11px;color:#718096;">('+r.jalur+')</span></div>'
+          + '<div style="font-size:11px;color:#718096;">'+r.hariOps+' hari | '+r.totalKm+' km | '+r.totalRit+' rit</div>'
+          + '</div>'
+          + '<div style="font-size:18px;font-weight:800;color:#155724;">'+r.rasio+' <span style="font-size:11px;font-weight:400;">km/L</span></div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  // Bottom 3
+  html += '<div class="card" style="border-left:4px solid #e53e3e;">'
+    + '<div class="card-header"><div class="card-title" style="color:#721c24;"><i class="fas fa-exclamation-triangle" style="color:#e53e3e;margin-right:6px;"></i>Perlu Perhatian</div></div>'
+    + bot3.map(function(r, i){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #e2e8f0;">'
+          + '<span style="font-size:20px;">'+(i===0?'🔴':i===1?'🟠':'🟡')+'</span>'
+          + '<div style="flex:1;">'
+          + '<div style="font-weight:700;">Lambung '+r.lamb+' <span style="font-size:11px;color:#718096;">('+r.jalur+')</span></div>'
+          + '<div style="font-size:11px;color:#718096;">'+r.hariOps+' hari | '+r.totalKm+' km | Rp '+r.totalBBMRp.toLocaleString('id-ID')+'</div>'
+          + '</div>'
+          + '<div style="font-size:18px;font-weight:800;color:#721c24;">'+r.rasio+' <span style="font-size:11px;font-weight:400;">km/L</span></div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  html += '</div>';
+
+  // Tabel lengkap dengan bar visual
+  html += '<div class="card"><div class="card-header"><div class="card-title">Ranking Semua Bus</div>'
+    + '<div style="margin-left:auto;display:flex;gap:8px;align-items:center;">'
+    + '<span style="font-size:12px;color:#718096;">Rata-rata: <strong>'+avgRasio+' km/L</strong></span>'
+    + '<button class="btn btn-sm btn-outline" onclick="exportLapEfisiensiExcel()"><i class="fas fa-file-excel"></i> Export</button>'
+    + '</div></div>'
+    + '<div class="table-outer"><table><thead><tr>'
+    + '<th>#</th><th>Lambung</th><th>Jalur</th><th>Hari</th>'
+    + '<th>KM Total</th><th>KM/Hari</th><th>BBM (L)</th><th>Rit Total</th><th>Rit/Hari</th>'
+    + '<th>Rasio km/L</th><th>Efisiensi</th>'
+    + '</tr></thead><tbody>';
+
+  rows.forEach(function(r, i) {
+    var pct = maxRasio > 0 ? (r.rasio / maxRasio * 100).toFixed(0) : 0;
+    var barColor = r.rasio >= avgRasio ? '#38a169' : r.rasio >= avgRasio * 0.75 ? '#d97706' : '#e53e3e';
+    var rank = i + 1;
+    var rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    html += '<tr>'
+      + '<td style="text-align:center;font-weight:700;">'+rankBadge+'</td>'
+      + '<td><strong>'+r.lamb+'</strong></td>'
+      + '<td>'+r.jalur+'</td>'
+      + '<td style="text-align:center;">'+r.hariOps+'</td>'
+      + '<td>'+r.totalKm.toLocaleString('id-ID')+' km</td>'
+      + '<td>'+r.kmPerHari+' km</td>'
+      + '<td>'+r.liter+' L</td>'
+      + '<td style="text-align:center;">'+r.totalRit+'</td>'
+      + '<td>'+r.ritPerHari+'</td>'
+      + '<td style="text-align:center;font-weight:800;color:'+barColor+';">'+r.rasio+'</td>'
+      + '<td style="min-width:100px;">'
+      + '<div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">'
+      + '<div style="width:'+pct+'%;background:'+barColor+';height:8px;border-radius:4px;transition:width 0.4s;"></div>'
+      + '</div>'
+      + '<span style="font-size:10px;color:#718096;">'+pct+'%</span>'
+      + '</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+  window._lapEfRows = rows;
+}
+
+function exportLapEfisiensiExcel() {
+  if (!window._lapEfRows) return toast('Generate laporan dulu!', true);
+  var hdrs = ['Rank','Lambung','Jalur','Hari','KM Total','KM/Hari','BBM (L)','Rit Total','Rit/Hari','Rasio km/L'];
+  var aoa = [hdrs].concat(window._lapEfRows.map(function(r,i){
+    return [i+1, r.lamb, r.jalur, r.hariOps, r.totalKm, r.kmPerHari, r.liter, r.totalRit, r.ritPerHari, r.rasio];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = hdrs.map(function(){ return {wch: 14}; });
+  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Efisiensi');
+  XLSX.writeFile(wb, 'LaporanEfisiensi_TransJogja.xlsx');
+  toast('Export berhasil!');
 }
 
 // ============================================================
@@ -1246,8 +1602,6 @@ async function importData(type, input) {
           var key = b.tgl+'|'+String(b.lambung).trim();
           bbmLookup[key] = (bbmLookup[key]||0) + parseFloat(b.nominal||0);
         });
-        var lookupCount = Object.keys(bbmLookup).length;
-        console.log('BBM lookup entries:', lookupCount, 'dari', bbmSource.length, 'record');
         records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){
           var tglStr=excelDateToStr(r.Tanggal||r.tgl);
           var lambStr=String(r.Lambung||r.lambung||'').trim();
@@ -1266,10 +1620,6 @@ async function importData(type, input) {
       }
       if(!records.length)return toast('Tidak ada data valid!',true);
       // Hitung berapa baris ops yang dapat data BBM dari lookup
-      if(type==='ops'){
-        var matched=records.filter(function(r){return r.bbm_rp>0;}).length;
-        console.log('OPS rows with BBM filled:', matched, '/', records.length);
-      }
       var tbl=type==='ops'?'operasional':type;var inserted=0;
       for(var i=0;i<records.length;i+=100){
         var chunk=records.slice(i,i+100);
@@ -1345,6 +1695,12 @@ async function updateDashboard() {
   var today=new Date().toISOString().split('T')[0];
   var todayOps=await db.from('operasional').select('id',{count:'exact',head:true}).eq('tgl',today);
   document.getElementById('banner-ops').textContent=todayOps.count||0;
+  // Hitung antrian hari ini: BBM tanpa pasangan Ops (matching tgl+lambung)
+  var opsKeys={};
+  DB.ops.forEach(function(o){ if(o.tgl===today) opsKeys[String(o.lambung).trim()]=true; });
+  var bbmPending = DB.bbm.filter(function(b){ return b.tgl===today && !opsKeys[String(b.lambung).trim()]; }).length;
+  var elPending = document.getElementById('banner-pending');
+  if(elPending) elPending.textContent = bbmPending;
   var days=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
   var bbm7=await db.from('bbm').select('tgl').gte('tgl',days[0]);
   var chart=document.getElementById('chart-bbm');
