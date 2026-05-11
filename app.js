@@ -94,7 +94,7 @@ function goPage(id) {
   if (id === 'data-bus')      loadBus();
   if (id === 'data-spbu')     loadSpbu();
   if (id === 'input-bbm')     loadBBM();
-  if (id === 'input-ops')     loadOps();
+  if (id === 'input-ops')     Promise.all([loadBBM(), loadOps()]).then(renderAntrian);
   if (id === 'lap-bbm-waktu') populateSpbuFilter();
   if (id === 'lap-bbm')       populateLambFilter('lb-lamb');
   if (id === 'lap-ops')       populateLambFilter('lo-lamb');
@@ -165,7 +165,9 @@ function applyUserSession() {
   // Load data awal lalu tampilkan dashboard
   Promise.all([
     loadBus().catch(function(e){ console.error(e); }),
-    loadSpbu().catch(function(e){ console.error(e); })
+    loadSpbu().catch(function(e){ console.error(e); }),
+    loadBBM().catch(function(e){ console.error(e); }),
+    loadOps().catch(function(e){ console.error(e); })
   ]).then(function(){ goPage('dashboard'); });
 }
 
