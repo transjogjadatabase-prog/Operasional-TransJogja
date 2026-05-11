@@ -407,6 +407,7 @@ async function loadBus() {
   var r = await fetchAll('bus', 'created_at', false);
   if (r.error) { toast('Gagal memuat data bus: ' + r.error.message, true); return; }
   DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
+  DB_FILTER.bus = null;
   renderBus();
   applyFreeze('tbl-bus'); populateLambDropdowns();
 }
@@ -543,30 +544,33 @@ async function deleteAll(type) {
 
 function renderBus() {
   var tbody = document.getElementById('tbody-bus');
-  if (!DB.bus.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
-  tbody.innerHTML = DB.bus.map(function(r, i) {
+  var arr = DB_FILTER.bus !== null ? DB_FILTER.bus : DB.bus;
+  if (!arr.length) { tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="fas fa-bus"></i><p>Belum ada data bus</p></div></td></tr>'; return; }
+  tbody.innerHTML = arr.map(function(r, i) {
     return '<tr>'
       +'<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">'+(i+1)+'</td>'
       +'<td><strong>'+r.lambung+'</strong></td><td>'+r.nopol+'</td>'
       +'<td><span class="badge-status badge-aktif">'+r.jalur+'</span></td>'
       +'<td>'+(r.tipe||'-')+'</td><td>'+(r.karoseri||'-')+'</td><td>'+(r.warna||'-')+'</td><td>'+(r.ket||'-')+'</td>'
       +'<td>'+(r.foto?'<img src="'+r.foto+'" style="width:44px;height:32px;object-fit:cover;border-radius:6px;">':'—')+'</td>'
-      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBus('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBus('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBusById(\''+r.id+'\')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBusById(\''+r.id+'\')"><i class="fas fa-trash"></i></button></div></td>'
       +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bus&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
   }).join('');
 }
-function editBus(i) {
+function editBusById(id) {
+  var i = DB.bus.findIndex(function(r){ return r.id == id; });
+  if (i < 0) return toast('Data tidak ditemukan', true);
   editIdx.bus = i; var r = DB.bus[i];
   document.getElementById('bus-lambung').value = r.lambung; document.getElementById('bus-nopol').value = r.nopol;
   document.getElementById('bus-jalur').value = r.jalur; document.getElementById('bus-tipe').value = r.tipe||'';
   document.getElementById('bus-karoseri').value = r.karoseri||''; document.getElementById('bus-warna').value = r.warna||''; document.getElementById('bus-ket').value = r.ket||'';
   document.getElementById('modal-bus-title').textContent = 'Edit Data Bus'; openModal('modal-bus');
 }
-async function delBus(i) {
+async function delBusById(id) {
   if (!confirm('Hapus data bus ini?')) return;
   try {
-    var res = await db.from('bus').delete().eq('id', DB.bus[i].id);
+    var res = await db.from('bus').delete().eq('id', id);
     if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
     toast('Data bus dihapus.'); loadBus(); updateDashboard();
   } catch(e) { toast('Gagal hapus: ' + (e.message||'Network error'), true); }
@@ -580,6 +584,7 @@ async function loadSpbu() {
   var r = await fetchAll('spbu', 'created_at', false);
   if (r.error) return toast('Gagal memuat SPBU: ' + r.error.message, true);
   DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode||'', nama:d.nama, alamat:d.alamat||'', hp:d.hp||'', aktif:d.aktif }; });
+  DB_FILTER.spbu = null;
   renderSpbu();
   applyFreeze('tbl-spbu'); populateSpbuDropdowns();
 }
@@ -595,8 +600,9 @@ async function saveSpbu() {
 }
 function renderSpbu() {
   var tbody = document.getElementById('tbody-spbu');
-  if (!DB.spbu.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
-  tbody.innerHTML = DB.spbu.map(function(r, i) {
+  var arr = DB_FILTER.spbu !== null ? DB_FILTER.spbu : DB.spbu;
+  if (!arr.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="fas fa-gas-pump"></i><p>Belum ada data SPBU</p></div></td></tr>'; return; }
+  tbody.innerHTML = arr.map(function(r, i) {
     return '<tr>'
       + '<td class="freeze-col" style="font-weight:700;color:var(--green-dark);text-align:center;">' + (i+1) + '</td>'
       + '<td><strong>' + r.nama + '</strong></td>'
@@ -604,22 +610,24 @@ function renderSpbu() {
       + '<td>' + (r.alamat||'-') + '</td>'
       + '<td>' + (r.hp||'-') + '</td>'
       + '<td><span class="badge-status ' + (r.aktif?'badge-aktif':'badge-nonaktif') + '">' + (r.aktif?'Aktif':'Tidak Aktif') + '</span></td>'
-      + '<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editSpbu(' + i + ')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delSpbu(' + i + ')"><i class="fas fa-trash"></i></button></div></td>'
+      + '<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editSpbuById(\''+r.id+'\')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delSpbuById(\''+r.id+'\')"><i class="fas fa-trash"></i></button></div></td>'
       + '<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;spbu&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       + '</tr>';
   }).join('');
 }
-function editSpbu(i) {
+function editSpbuById(id) {
+  var i = DB.spbu.findIndex(function(r){ return r.id == id; });
+  if (i < 0) return toast('Data tidak ditemukan', true);
   editIdx.spbu = i; var r = DB.spbu[i];
   document.getElementById('spbu-nama').value = r.nama; document.getElementById('spbu-kode').value = r.kode||'';
   document.getElementById('spbu-alamat').value = r.alamat||''; document.getElementById('spbu-hp').value = r.hp||'';
   document.getElementById('spbu-status').value = r.aktif?'1':'0';
   document.getElementById('modal-spbu-title').textContent = 'Edit Data SPBU'; openModal('modal-spbu');
 }
-async function delSpbu(i) {
+async function delSpbuById(id) {
   if (!confirm('Hapus data SPBU ini?')) return;
   try {
-    var res = await db.from('spbu').delete().eq('id', DB.spbu[i].id);
+    var res = await db.from('spbu').delete().eq('id', id);
     if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
     toast('Data SPBU dihapus.'); loadSpbu(); updateDashboard();
   } catch(e) { toast('Gagal hapus: ' + (e.message||'Network error'), true); }
@@ -652,6 +660,7 @@ async function loadBBM() {
   var r = await fetchAll('bbm', 'tgl', false);
   if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
   DB.bbm = r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket,status:d.status||'pending'};});
+  DB_FILTER.bbm = null;
   renderBBM();
   renderAntrian();
   applyFreeze('tbl-bbm');
@@ -680,11 +689,12 @@ async function saveBBM() {
 }
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
-  if(!DB.bbm.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
+  var arr = DB_FILTER.bbm !== null ? DB_FILTER.bbm : DB.bbm;
+  if(!arr.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
   // Kumpulkan bbm_id yang sudah dipakai di operasional
   var usedBbmIds={};
   DB.ops.forEach(function(o){if(o.bbmId)usedBbmIds[o.bbmId]=true;});
-  tbody.innerHTML=DB.bbm.map(function(r,i){
+  tbody.innerHTML=arr.map(function(r,i){
     var sudahOps = usedBbmIds[r.id];
     var statusHtml = sudahOps
       ? '<span class="badge-approved"><i class="fas fa-check-circle"></i> Approved</span>'
@@ -695,12 +705,14 @@ function renderBBM() {
       +'<td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td>'
       +'<td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td><td>'+(r.jamHalte||'-')+'</td><td>'+(r.ket||'-')+'</td>'
       +'<td style="text-align:center;">'+statusHtml+'</td>'
-      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBM('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBM('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editBBMById(\''+r.id+'\')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delBBMById(\''+r.id+'\')"><i class="fas fa-trash"></i></button></div></td>'
       +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;bbm&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
   }).join('');
 }
-function editBBM(i) {
+function editBBMById(id) {
+  var i = DB.bbm.findIndex(function(r){ return r.id == id; });
+  if (i < 0) return toast('Data tidak ditemukan', true);
   editIdx.bbm=i;var r=DB.bbm[i];populateLambDropdowns();populateSpbuDropdowns();
   document.getElementById('bbm-tgl').value=r.tgl;document.getElementById('bbm-lambung').value=r.lambung;autofillBBM();
   document.getElementById('bbm-waktu').value=r.waktu||'';document.getElementById('bbm-nominal').value=r.nominal;
@@ -709,10 +721,10 @@ function editBBM(i) {
   document.getElementById('bbm-ket').value=r.ket||'';
   document.getElementById('modal-bbm-title').textContent='Edit Data BBM';openModal('modal-bbm');
 }
-async function delBBM(i) {
+async function delBBMById(id) {
   if(!confirm('Hapus data BBM ini?'))return;
   try {
-    var res=await db.from('bbm').delete().eq('id',DB.bbm[i].id);
+    var res=await db.from('bbm').delete().eq('id',id);
     if(res.error)return toast('Gagal hapus: '+res.error.message,true);
     toast('Data BBM dihapus.');loadBBM();updateDashboard();
   } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
@@ -804,6 +816,7 @@ async function loadOps() {
   var r=await fetchAll('operasional','tgl',false);
   if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
   DB.ops=r.data.map(function(d){return{id:d.id,tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket,bbmId:d.bbm_id};});
+  DB_FILTER.ops = null;
   renderOps();
   renderAntrian();
   applyFreeze('tbl-ops');
@@ -901,8 +914,9 @@ async function saveOps() {
 }
 function renderOps() {
   var tbody=document.getElementById('tbody-ops');
-  if(!DB.ops.length){tbody.innerHTML='<tr><td colspan="18"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
-  tbody.innerHTML=DB.ops.map(function(r,i){
+  var arr = DB_FILTER.ops !== null ? DB_FILTER.ops : DB.ops;
+  if(!arr.length){tbody.innerHTML='<tr><td colspan="18"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
+  tbody.innerHTML=arr.map(function(r,i){
     function fmtKm(v){ return v ? Number(v).toLocaleString('id-ID') : '-'; }
     var statusHtml = r.bbmId
       ? '<span class="badge-approved"><i class="fas fa-check-circle"></i> Approved</span>'
@@ -925,12 +939,14 @@ function renderOps() {
       +'<td>'+(r.ratio||'-')+'</td>'
       +'<td>'+(r.ket||'-')+'</td>'
       +'<td style="text-align:center;">'+statusHtml+'</td>'
-      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOps('+i+')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOps('+i+')"><i class="fas fa-trash"></i></button></div></td>'
+      +'<td><div class="action-btns"><button class="btn btn-outline btn-sm" onclick="editOpsById(\''+r.id+'\')"><i class="fas fa-edit"></i></button><button class="btn btn-danger btn-sm" onclick="delOpsById(\''+r.id+'\')"><i class="fas fa-trash"></i></button></div></td>'
       +'<td class="cb-th-hide" style="text-align:center;"><input type="checkbox" class="cb-select cb-row" value="'+r.id+'" onchange="onRowCheck(&quot;ops&quot;,this,&quot;'+r.id+'&quot;)"></td>'
       +'</tr>';
   }).join('');
 }
-function editOps(i) {
+function editOpsById(id) {
+  var i = DB.ops.findIndex(function(r){ return r.id == id; });
+  if (i < 0) return toast('Data tidak ditemukan', true);
   editIdx.ops=i;var r=DB.ops[i];populateLambDropdowns();
   document.getElementById('ops-tgl').value=r.tgl;document.getElementById('ops-lambung').value=r.lambung;autofillOps();
   document.getElementById('ops-jam-mulai').value=r.jamMulai||'';document.getElementById('ops-jam-akhir').value=r.jamAkhir||'';
@@ -941,10 +957,10 @@ function editOps(i) {
   document.getElementById('ops-ket').value=r.ket||'';
   pendingBBMId=null;document.getElementById('modal-ops-title').textContent='Edit Data Operasional';openModal('modal-ops');
 }
-async function delOps(i) {
+async function delOpsById(id) {
   if(!confirm('Hapus data operasional ini?'))return;
   try {
-    var res=await db.from('operasional').delete().eq('id',DB.ops[i].id);
+    var res=await db.from('operasional').delete().eq('id',id);
     if(res.error)return toast('Gagal hapus: '+res.error.message,true);
     toast('Data operasional dihapus.');loadOps();updateDashboard();
   } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
@@ -953,10 +969,12 @@ async function delOps(i) {
 // ============================================================
 // FILTER & LAPORAN
 // ============================================================
+// State filter aktif per tabel - agar render/delete/edit pakai array yg benar
+var DB_FILTER = { bus: null, spbu: null, bbm: null, ops: null, akun: null };
+
 function filterTable(tableId, keyword) {
   var kw = keyword.trim().toLowerCase();
 
-  // Map tabel ke key di DB
   var keyMap = { 'tbl-bus':'bus', 'tbl-spbu':'spbu', 'tbl-bbm':'bbm', 'tbl-ops':'ops', 'tbl-akun':'akun' };
   var renderMap = {
     'tbl-bus':  function(){ renderBus(); },
@@ -969,14 +987,12 @@ function filterTable(tableId, keyword) {
   var key = keyMap[tableId];
   if (!key || !renderMap[tableId]) return;
 
-  var origArr = DB[key];
-
   if (!kw) {
-    // Kosong: restore semua
-    DB[key] = origArr;
+    // Kosong: hapus filter, pakai DB asli
+    DB_FILTER[key] = null;
   } else {
-    // Filter data berdasarkan semua field
-    DB[key] = origArr.filter(function(r) {
+    // Simpan hasil filter ke DB_FILTER, JANGAN timpa DB[key]
+    DB_FILTER[key] = DB[key].filter(function(r) {
       return Object.values(r).some(function(v) {
         return v !== null && v !== undefined && String(v).toLowerCase().includes(kw);
       });
@@ -985,9 +1001,6 @@ function filterTable(tableId, keyword) {
 
   renderMap[tableId]();
   applyFreeze(tableId);
-
-  // Restore data asli agar operasi lain tidak terganggu
-  DB[key] = origArr;
 }
 function populateSpbuFilter() {
   var sel=document.getElementById('lw-spbu');if(!sel)return;
