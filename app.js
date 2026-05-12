@@ -349,42 +349,115 @@ function closeModal(id) {
   clearForm(id);
 }
 
-// Simpan BBM lalu langsung reset form untuk input berikutnya (TIDAK tutup modal)
-async function saveBBMAndNext() {
-  // Cek field wajib dulu
+// ── saveBBMCore: validasi + optimistic update, return false jika gagal ──
+// Tidak mengandung network call — murni sync UI
+function saveBBMCore() {
   var tgl=document.getElementById('bbm-tgl').value, lamb=document.getElementById('bbm-lambung').value, nominal=document.getElementById('bbm-nominal').value;
-  if (!tgl||!lamb||!nominal) return toast('Tanggal, Lambung, dan Nominal wajib diisi!',true);
-
-  // Simpan dulu (panggil saveBBM yang sudah optimistic)
-  await saveBBM();
-
-  // Setelah saveBBM closeModal → kita buka lagi dengan tgl yang sama, form bersih
-  setTimeout(function() {
-    editIdx.bbm = -1;
-    populateLambDropdowns(); populateSpbuDropdowns();
-    // Pre-fill tanggal & jalur yang sama untuk efisiensi
-    document.getElementById('bbm-tgl').value = tgl;
-    document.getElementById('modal-bbm-title').textContent = 'Input BBM';
-    openModal('modal-bbm');
-    document.getElementById('bbm-lambung').focus();
-  }, 80);
+  if (!tgl||!lamb||!nominal) { toast('Tanggal, Lambung, dan Nominal wajib diisi!',true); return null; }
+  var jamHalteEl=document.getElementById('bbm-jam-halte');
+  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:jamHalteEl?jamHalteEl.value||null:null,ket:document.getElementById('bbm-ket').value};
+  if (editIdx.bbm < 0) {
+    var waktuVal = row.waktu||'';
+    var dup = DB.bbm.find(function(b){ return String(b.lambung).trim()===String(lamb).trim()&&String(b.tgl).substring(0,10)===tgl&&String(b.waktu||'')===waktuVal&&Number(b.nominal)===parseFloat(nominal); });
+    if (dup) { toast('⚠️ Data duplikat! Lambung '+lamb+' | '+tgl+' sudah ada.',true); return null; }
+  }
+  var isEdit = editIdx.bbm >= 0;
+  var editId = isEdit ? DB.bbm[editIdx.bbm].id : null;
+  // Optimistic local update
+  if (isEdit) {
+    Object.assign(DB.bbm[editIdx.bbm], {tgl:row.tgl,lambung:String(row.lambung).trim(),jalur:row.jalur,nopol:row.nopol,waktu:row.waktu,nominal:row.nominal,spbu:row.spbu,halte:row.halte,jamHalte:row.jam_halte,ket:row.ket});
+  } else {
+    DB.bbm.unshift({id:'_tmp_'+Date.now(),tgl:row.tgl,lambung:String(row.lambung).trim(),jalur:row.jalur,nopol:row.nopol,waktu:row.waktu,nominal:row.nominal,spbu:row.spbu,halte:row.halte,jamHalte:row.jam_halte,ket:row.ket});
+  }
+  DB_FILTER.bbm = null;
+  return { row, isEdit, editId };
 }
 
-// Simpan Ops lalu langsung reset form untuk input berikutnya
-async function saveOpsAndNext() {
+// ── Fire-and-forget network sync untuk BBM ──
+function _bbmNetworkSync(row, isEdit, editId) {
+  (async function() {
+    var res = isEdit ? await db.from('bbm').update(row).eq('id',editId) : await db.from('bbm').insert(row);
+    if (res && res.error) {
+      if (!isEdit) DB.bbm.shift();
+      toast('⚠ Gagal simpan: '+res.error.message, true);
+    }
+    Promise.all([loadBBM(), loadOps()]).then(function(){ renderAntrian(); updateDashboard(); });
+  })();
+}
+
+function saveBBM() {
+  var ctx = saveBBMCore(); if (!ctx) return;
+  toast(ctx.isEdit ? 'Data BBM diperbarui!' : 'Data BBM disimpan!');
+  closeModal('modal-bbm');
+  renderBBM(); renderAntrian();
+  _bbmNetworkSync(ctx.row, ctx.isEdit, ctx.editId); // fire-and-forget
+}
+
+// Simpan & langsung siap input lagi — modal tidak tutup lama
+function saveBBMAndNext() {
+  var tgl = document.getElementById('bbm-tgl').value;
+  var ctx = saveBBMCore(); if (!ctx) return;
+  toast(ctx.isEdit ? 'Data BBM diperbarui!' : 'Data BBM disimpan!');
+  closeModal('modal-bbm');    // tutup & reset form
+  renderBBM(); renderAntrian();
+  _bbmNetworkSync(ctx.row, ctx.isEdit, ctx.editId); // fire-and-forget
+  // Buka lagi SEKETIKA dengan tanggal dipertahankan
+  editIdx.bbm = -1;
+  populateLambDropdowns(); populateSpbuDropdowns();
+  document.getElementById('bbm-tgl').value = tgl;
+  openModal('modal-bbm');
+  document.getElementById('bbm-lambung').focus();
+}
+
+// ── saveOpsCore: validasi + optimistic update ──
+function saveOpsCore() {
   var tgl=document.getElementById('ops-tgl').value, lamb=document.getElementById('ops-lambung').value;
-  if (!tgl||!lamb) return toast('Tanggal dan Lambung wajib diisi!',true);
+  if (!tgl||!lamb) { toast('Tanggal dan Lambung wajib diisi!',true); return null; }
+  var jm=document.getElementById('ops-jam-mulai').value, ja=document.getElementById('ops-jam-akhir').value;
+  var bbmVal=parseFloat(document.getElementById('ops-bbm').value)||0;
+  var kmTempuh=null, ratio=null;
+  var kmAP=parseFloat(document.getElementById('ops-km-awal-pool').value)||0, kmKP=parseFloat(document.getElementById('ops-km-akhir-pool').value)||0;
+  var kmAH=parseFloat(document.getElementById('ops-km-awal-halte').value)||0, kmKH=parseFloat(document.getElementById('ops-km-akhir-halte').value)||0;
+  if(kmKP>0&&kmAP>0){kmTempuh=parseFloat((kmKP-kmAP).toFixed(1));}
+  else if(kmKH>0&&kmAH>0){kmTempuh=parseFloat((kmKH-kmAH).toFixed(1));}
+  if(kmTempuh&&bbmVal>0){ratio=parseFloat((kmTempuh/(bbmVal/6800)).toFixed(2));}
+  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('ops-jalur').value,nopol:document.getElementById('ops-nopol').value,jam_mulai:jm||null,jam_akhir:ja||null,km_awal_pool:parseFloat(document.getElementById('ops-km-awal-pool').value)||null,km_akhir_pool:parseFloat(document.getElementById('ops-km-akhir-pool').value)||null,km_awal_halte:parseFloat(document.getElementById('ops-km-awal-halte').value)||null,km_akhir_halte:parseFloat(document.getElementById('ops-km-akhir-halte').value)||null,bbm_rp:bbmVal,rit:parseInt(document.getElementById('ops-rit').value)||0,km_tempuh:kmTempuh,ratio:ratio,ket:document.getElementById('ops-ket').value};
+  var isEdit = editIdx.ops >= 0;
+  var editId = isEdit ? DB.ops[editIdx.ops].id : null;
+  if (isEdit) {
+    Object.assign(DB.ops[editIdx.ops], {tgl:row.tgl,lambung:String(row.lambung).trim(),jalur:row.jalur,nopol:row.nopol,jamMulai:row.jam_mulai,jamAkhir:row.jam_akhir,kmAwalPool:row.km_awal_pool,kmAkhirPool:row.km_akhir_pool,kmAwalHalte:row.km_awal_halte,kmAkhirHalte:row.km_akhir_halte,bbm:row.bbm_rp,rit:row.rit,kmTempuh:row.km_tempuh,ratio:row.ratio,ket:row.ket});
+  } else {
+    DB.ops.unshift({id:'_tmp_'+Date.now(),tgl:row.tgl,lambung:String(row.lambung).trim(),jalur:row.jalur,nopol:row.nopol,jamMulai:row.jam_mulai,jamAkhir:row.jam_akhir,kmAwalPool:row.km_awal_pool,kmAkhirPool:row.km_akhir_pool,kmAwalHalte:row.km_awal_halte,kmAkhirHalte:row.km_akhir_halte,bbm:row.bbm_rp,rit:row.rit,kmTempuh:row.km_tempuh,ratio:row.ratio,ket:row.ket});
+  }
+  DB_FILTER.ops = null;
+  return { row, isEdit, editId };
+}
 
-  await saveOps();
+function _opsNetworkSync(row, isEdit, editId) {
+  (async function() {
+    var res = isEdit ? await db.from('operasional').update(row).eq('id',editId) : await db.from('operasional').insert(row);
+    if (res && res.error) {
+      if (!isEdit) DB.ops.shift();
+      toast('⚠ Gagal simpan: '+res.error.message, true);
+    }
+    Promise.all([loadOps(), loadBBM()]).then(function(){ renderAntrian(); updateDashboard(); });
+  })();
+}
 
-  setTimeout(function() {
-    editIdx.ops = -1;
-    populateLambDropdowns();
-    document.getElementById('ops-tgl').value = tgl;
-    document.getElementById('modal-ops-title').textContent = 'Tambah Data Operasional';
-    openModal('modal-ops');
-    document.getElementById('ops-lambung').focus();
-  }, 80);
+function saveOpsAndNext() {
+  var tgl = document.getElementById('ops-tgl').value;
+  var ctx = saveOpsCore(); if (!ctx) return;
+  toast(ctx.isEdit ? 'Data operasional diperbarui!' : 'Data operasional disimpan!');
+  closeModal('modal-ops');
+  renderOps(); renderAntrian();
+  _opsNetworkSync(ctx.row, ctx.isEdit, ctx.editId);
+  // Buka lagi SEKETIKA
+  editIdx.ops = -1;
+  populateLambDropdowns();
+  document.getElementById('ops-tgl').value = tgl;
+  document.getElementById('modal-ops-title').textContent = 'Tambah Data Operasional';
+  openModal('modal-ops');
+  document.getElementById('ops-lambung').focus();
 }
 
 function clearForm(modalId) {
@@ -715,59 +788,11 @@ async function loadBBM() {
   applyFreeze('tbl-bbm');
 }
 async function saveBBM() {
-  var tgl=document.getElementById('bbm-tgl').value, lamb=document.getElementById('bbm-lambung').value, nominal=document.getElementById('bbm-nominal').value;
-  if (!tgl||!lamb||!nominal) return toast('Tanggal, Lambung, dan Nominal wajib diisi!',true);
-  var jamHalteEl=document.getElementById('bbm-jam-halte');
-  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('bbm-jalur').value,nopol:document.getElementById('bbm-nopol').value,waktu:document.getElementById('bbm-waktu').value||null,nominal:parseFloat(nominal),spbu:document.getElementById('bbm-spbu').value,halte:document.getElementById('bbm-halte').value,jam_halte:jamHalteEl?jamHalteEl.value||null:null,ket:document.getElementById('bbm-ket').value};
-  // Cek duplikat: tgl + lambung + waktu + nominal
-  if (editIdx.bbm < 0) {
-    var waktuVal = document.getElementById('bbm-waktu').value||'';
-    var duplikat = DB.bbm.find(function(b) {
-      return String(b.lambung).trim() === String(lamb).trim()
-        && String(b.tgl).substring(0,10) === tgl
-        && String(b.waktu||'') === waktuVal
-        && Number(b.nominal) === parseFloat(nominal);
-    });
-    if (duplikat) return toast('⚠️ Data duplikat! Lambung ' + lamb + ' | ' + tgl + ' | ' + (waktuVal||'-') + ' | Rp ' + Number(nominal).toLocaleString() + ' sudah ada.', true);
-  }
-  var isEdit = editIdx.bbm >= 0;
-  var editId = isEdit ? DB.bbm[editIdx.bbm].id : null;
-
-  // ── OPTIMISTIC: update local state & tutup modal SEKETIKA ──
-  if (isEdit) {
-    Object.assign(DB.bbm[editIdx.bbm], {
-      tgl:row.tgl, lambung:String(row.lambung).trim(), jalur:row.jalur, nopol:row.nopol,
-      waktu:row.waktu, nominal:row.nominal, spbu:row.spbu, halte:row.halte,
-      jamHalte:row.jam_halte, ket:row.ket
-    });
-  } else {
-    // Tambah ke lokal dengan id sementara agar langsung tampil
-    DB.bbm.unshift({
-      id: '_tmp_'+Date.now(),
-      tgl:row.tgl, lambung:String(row.lambung).trim(), jalur:row.jalur, nopol:row.nopol,
-      waktu:row.waktu, nominal:row.nominal, spbu:row.spbu, halte:row.halte,
-      jamHalte:row.jam_halte, ket:row.ket
-    });
-  }
-  DB_FILTER.bbm = null;
-  toast(isEdit ? 'Data BBM diperbarui!' : 'Data BBM disimpan!');
-  closeModal('modal-bbm');   // ← modal tutup & form reset SEKETIKA
+  var ctx = saveBBMCore(); if (!ctx) return;
+  toast(ctx.isEdit ? 'Data BBM diperbarui!' : 'Data BBM disimpan!');
+  closeModal('modal-bbm');
   renderBBM(); renderAntrian();
-
-  // ── BACKGROUND: kirim ke Supabase, lalu sync data asli ──
-  (async function() {
-    var res = isEdit
-      ? await db.from('bbm').update(row).eq('id', editId)
-      : await db.from('bbm').insert(row);
-    if (res && res.error) {
-      // Rollback lokal jika server error
-      if (!isEdit) DB.bbm.shift();
-      else Object.assign(DB.bbm.find(function(b){ return b.id===editId; })||{}, {}); // biarkan reload sync
-      toast('⚠ Gagal simpan: ' + res.error.message, true);
-    }
-    // Refresh dari server di background (untuk dapat id asli & konsistensi)
-    Promise.all([loadBBM(), loadOps()]).then(function(){ renderAntrian(); updateDashboard(); });
-  })();
+  _bbmNetworkSync(ctx.row, ctx.isEdit, ctx.editId);
 }
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
@@ -1052,59 +1077,12 @@ function isiDariAntrian(bbmId) {
   document.getElementById('modal-ops-title').textContent = 'Input Operasional — Lambung '+bbmRec.lambung+' ('+bbmRec.tgl+')';
   openModal('modal-ops');
 }
-async function saveOps() {
-  var tgl=document.getElementById('ops-tgl').value,lamb=document.getElementById('ops-lambung').value;
-  if(!tgl||!lamb)return toast('Tanggal dan Lambung wajib diisi!',true);
-  var jm=document.getElementById('ops-jam-mulai').value,ja=document.getElementById('ops-jam-akhir').value;
-  var bbmVal=parseFloat(document.getElementById('ops-bbm').value)||0;
-  var kmTempuh=null,ratio=null;
-  var kmAP=parseFloat(document.getElementById('ops-km-awal-pool').value)||0;
-  var kmKP=parseFloat(document.getElementById('ops-km-akhir-pool').value)||0;
-  var kmAH=parseFloat(document.getElementById('ops-km-awal-halte').value)||0;
-  var kmKH=parseFloat(document.getElementById('ops-km-akhir-halte').value)||0;
-  if(kmKP>0&&kmAP>0){kmTempuh=parseFloat((kmKP-kmAP).toFixed(1));}
-  else if(kmKH>0&&kmAH>0){kmTempuh=parseFloat((kmKH-kmAH).toFixed(1));}
-  if(kmTempuh&&bbmVal>0){ratio=parseFloat((kmTempuh/(bbmVal/6800)).toFixed(2));}
-  // Tidak perlu bbm_id di row — relasi ditentukan via tgl+lambung matching
-  var row={tgl:tgl,lambung:lamb,jalur:document.getElementById('ops-jalur').value,nopol:document.getElementById('ops-nopol').value,jam_mulai:jm||null,jam_akhir:ja||null,km_awal_pool:parseFloat(document.getElementById('ops-km-awal-pool').value)||null,km_akhir_pool:parseFloat(document.getElementById('ops-km-akhir-pool').value)||null,km_awal_halte:parseFloat(document.getElementById('ops-km-awal-halte').value)||null,km_akhir_halte:parseFloat(document.getElementById('ops-km-akhir-halte').value)||null,bbm_rp:bbmVal,rit:parseInt(document.getElementById('ops-rit').value)||0,km_tempuh:kmTempuh,ratio:ratio,ket:document.getElementById('ops-ket').value};
-  var isEdit = editIdx.ops >= 0;
-  var editId = isEdit ? DB.ops[editIdx.ops].id : null;
-
-  // ── OPTIMISTIC: update local state & tutup modal SEKETIKA ──
-  if (isEdit) {
-    Object.assign(DB.ops[editIdx.ops], {
-      tgl:row.tgl, lambung:String(row.lambung).trim(), jalur:row.jalur, nopol:row.nopol,
-      jamMulai:row.jam_mulai, jamAkhir:row.jam_akhir,
-      kmAwalPool:row.km_awal_pool, kmAkhirPool:row.km_akhir_pool,
-      kmAwalHalte:row.km_awal_halte, kmAkhirHalte:row.km_akhir_halte,
-      bbm:row.bbm_rp, rit:row.rit, kmTempuh:row.km_tempuh, ratio:row.ratio, ket:row.ket
-    });
-  } else {
-    DB.ops.unshift({
-      id: '_tmp_'+Date.now(),
-      tgl:row.tgl, lambung:String(row.lambung).trim(), jalur:row.jalur, nopol:row.nopol,
-      jamMulai:row.jam_mulai, jamAkhir:row.jam_akhir,
-      kmAwalPool:row.km_awal_pool, kmAkhirPool:row.km_akhir_pool,
-      kmAwalHalte:row.km_awal_halte, kmAkhirHalte:row.km_akhir_halte,
-      bbm:row.bbm_rp, rit:row.rit, kmTempuh:row.km_tempuh, ratio:row.ratio, ket:row.ket
-    });
-  }
-  DB_FILTER.ops = null;
-  toast(isEdit ? 'Data operasional diperbarui!' : 'Data operasional disimpan!');
-  closeModal('modal-ops');   // ← modal tutup SEKETIKA, siap input berikutnya
+function saveOps() {
+  var ctx = saveOpsCore(); if (!ctx) return;
+  toast(ctx.isEdit ? 'Data operasional diperbarui!' : 'Data operasional disimpan!');
+  closeModal('modal-ops');
   renderOps(); renderAntrian();
-
-  // ── BACKGROUND: kirim ke Supabase, lalu sync ──
-  (async function() {
-    var res = isEdit
-      ? await db.from('operasional').update(row).eq('id', editId)
-      : await db.from('operasional').insert(row);
-    if (res && res.error) {
-      if (!isEdit) DB.ops.shift();
-      toast('⚠ Gagal simpan: ' + res.error.message, true);
-    }
-    Promise.all([loadOps(), loadBBM()]).then(function(){ renderAntrian(); updateDashboard(); });
-  })();
+  _opsNetworkSync(ctx.row, ctx.isEdit, ctx.editId);
 }
 function renderOps() {
   var tbody=document.getElementById('tbody-ops');
