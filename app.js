@@ -8,6 +8,20 @@ var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ============ STATE ============
 let DB = { bus: [], spbu: [], bbm: [], ops: [], akun: [] };
 let editIdx = { bus: -1, spbu: -1, bbm: -1, ops: -1, akun: -1 };
+
+// ── Cache staleness — tandai data "kotor" agar loadXxx tidak fetch ulang
+// tanpa perlu. Set true hanya saat ada mutasi (insert/update/delete).
+let DB_STALE = { bus: true, spbu: true, bbm: true, ops: true };
+// Flag loading sedang berjalan — cegah double-fetch paralel
+let DB_LOADING = { bus: false, spbu: false, bbm: false, ops: false };
+// Antrian promise subscriber: semua caller yang datang saat loading aktif
+// akan resolved bersama saat fetch selesai
+let DB_LOADING_PROMISE = { bus: null, spbu: null, bbm: null, ops: null };
+
+/** Paksa reload berikutnya (panggil setelah mutasi data) */
+function markStale(...tables) {
+  tables.forEach(function(t){ DB_STALE[t] = true; });
+}
 let sidebarOpen = false;
 let currentUser = null; // { id, nama, username, role, perms }
 
@@ -103,9 +117,23 @@ function goPage(id) {
   if (id === 'lap-bbm-waktu') populateSpbuFilter();
   if (id === 'lap-bbm')       populateLambFilter('lb-lamb');
   if (id === 'lap-ops')       populateLambFilter('lo-lamb');
-  if (id === 'lap-gabungan')  { populateLambFilter('lg-lamb'); Promise.all([loadBBM(),loadOps()]).then(generateLapGabungan); }
-  if (id === 'lap-harian')    Promise.all([loadBBM(),loadOps()]).then(generateLapHarian);
-  if (id === 'lap-efisiensi') Promise.all([loadBBM(),loadOps()]).then(generateLapEfisiensi);
+  // Untuk laporan: pakai cache kalau masih fresh, hanya re-render
+  if (id === 'lap-gabungan')  {
+    populateLambFilter('lg-lamb');
+    if (DB_STALE.bbm || DB_STALE.ops || !DB.bbm.length || !DB.ops.length)
+      Promise.all([loadBBM(), loadOps()]).then(generateLapGabungan);
+    else generateLapGabungan();
+  }
+  if (id === 'lap-harian') {
+    if (DB_STALE.bbm || DB_STALE.ops || !DB.bbm.length || !DB.ops.length)
+      Promise.all([loadBBM(), loadOps()]).then(generateLapHarian);
+    else generateLapHarian();
+  }
+  if (id === 'lap-efisiensi') {
+    if (DB_STALE.bbm || DB_STALE.ops || !DB.bbm.length || !DB.ops.length)
+      Promise.all([loadBBM(), loadOps()]).then(generateLapEfisiensi);
+    else generateLapEfisiensi();
+  }
   if (id === 'kelola-akun')   loadAkun();
   // Apply freeze ke tabel yang sudah ada di DOM
   setTimeout(applyFreeze, 50);
@@ -171,6 +199,7 @@ function applyUserSession() {
   // Sembunyikan tombol aksi berdasarkan permission
   applyActionPerms();
   // Load data awal lalu tampilkan dashboard
+  markStale('bus','spbu','bbm','ops');
   Promise.all([
     loadBus().catch(function(e){ console.error(e); }),
     loadSpbu().catch(function(e){ console.error(e); }),
@@ -381,7 +410,8 @@ function _bbmNetworkSync(row, isEdit, editId) {
       if (!isEdit) DB.bbm.shift();
       toast('⚠ Gagal simpan: '+res.error.message, true);
     }
-    Promise.all([loadBBM(), loadOps()]).then(function(){ renderAntrian(); updateDashboard(); });
+    markStale('bbm','ops');
+    Promise.all([loadBBM(true), loadOps(true)]).then(function(){ renderAntrian(); updateDashboard(); });
   })();
 }
 
@@ -440,7 +470,8 @@ function _opsNetworkSync(row, isEdit, editId) {
       if (!isEdit) DB.ops.shift();
       toast('⚠ Gagal simpan: '+res.error.message, true);
     }
-    Promise.all([loadOps(), loadBBM()]).then(function(){ renderAntrian(); updateDashboard(); });
+    markStale('ops','bbm');
+    Promise.all([loadOps(true), loadBBM(true)]).then(function(){ renderAntrian(); updateDashboard(); });
   })();
 }
 
@@ -504,17 +535,18 @@ function applyFreeze(tableId) {
 // ============================================================
 // FETCH ALL — Supabase default limit 1000, ini ambil semua halaman
 // ============================================================
-async function fetchAll(table, orderCol, orderAsc) {
+async function fetchAll(table, orderCol, orderAsc, orderCol2, orderAsc2) {
   var allData = [];
   var pageSize = 1000;
   var from = 0;
   while (true) {
-    var r = await db.from(table).select('*')
-      .order(orderCol, { ascending: orderAsc })
-      .range(from, from + pageSize - 1);
+    var q = db.from(table).select('*').order(orderCol, { ascending: orderAsc });
+    if (orderCol2) q = q.order(orderCol2, { ascending: orderAsc2 !== false });
+    q = q.range(from, from + pageSize - 1);
+    var r = await q;
     if (r.error) return { data: null, error: r.error };
     allData = allData.concat(r.data);
-    if (r.data.length < pageSize) break; // sudah halaman terakhir
+    if (r.data.length < pageSize) break;
     from += pageSize;
   }
   return { data: allData, error: null };
@@ -523,14 +555,21 @@ async function fetchAll(table, orderCol, orderAsc) {
 // ============================================================
 // BUS
 // ============================================================
-async function loadBus() {
+async function loadBus(forceRefresh) {
+  if (!forceRefresh && !DB_STALE.bus && DB.bus.length) { renderBus(); applyFreeze('tbl-bus'); populateLambDropdowns(); return; }
+  if (DB_LOADING.bus && DB_LOADING_PROMISE.bus) return DB_LOADING_PROMISE.bus;
+  DB_LOADING.bus = true;
   setLoading('tbody-bus', 10);
-  var r = await fetchAll('bus', 'created_at', false);
-  if (r.error) { toast('Gagal memuat data bus: ' + r.error.message, true); return; }
-  DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
-  DB_FILTER.bus = null;
-  renderBus();
-  applyFreeze('tbl-bus'); populateLambDropdowns();
+  DB_LOADING_PROMISE.bus = (async function() {
+    var r = await fetchAll('bus', 'created_at', false);
+    DB_LOADING.bus = false; DB_LOADING_PROMISE.bus = null;
+    if (r.error) { toast('Gagal memuat data bus: ' + r.error.message, true); return; }
+    DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
+    DB_STALE.bus = false;
+    DB_FILTER.bus = null;
+    renderBus(); applyFreeze('tbl-bus'); populateLambDropdowns();
+  })();
+  return DB_LOADING_PROMISE.bus;
 }
 async function saveBus() {
   var lambung = document.getElementById('bus-lambung').value.trim();
@@ -551,7 +590,7 @@ async function saveBus() {
   if (editIdx.bus >= 0) { res = await db.from('bus').update(row).eq('id', DB.bus[editIdx.bus].id); if (!res.error) toast('Data bus diperbarui!'); }
   else { res = await db.from('bus').insert(row); if (!res.error) toast('Data bus disimpan!'); }
   if (res.error) return toast('Error: ' + res.error.message, true);
-  closeModal('modal-bus'); loadBus(); updateDashboard();
+  markStale('bus'); closeModal('modal-bus'); loadBus(true); updateDashboard();
 }
 // ============================================================
 // MULTI DELETE
@@ -642,7 +681,10 @@ async function bulkDelete(type) {
   toast('✅ ' + ids.length + ' data dihapus.');
   clearSelect(type);
   toggleDeleteMode(type); // matikan delete mode
-  if(type==='bus')loadBus(); else if(type==='spbu')loadSpbu(); else if(type==='bbm')loadBBM(); else if(type==='ops')loadOps();
+  if(type==='bus'){ markStale('bus'); loadBus(true); }
+  else if(type==='spbu'){ markStale('spbu'); loadSpbu(true); }
+  else if(type==='bbm'){ markStale('bbm','ops'); Promise.all([loadBBM(true),loadOps(true)]).then(renderAntrian); }
+  else if(type==='ops'){ markStale('ops','bbm'); Promise.all([loadOps(true),loadBBM(true)]).then(renderAntrian); }
   updateDashboard();
 }
 
@@ -658,7 +700,10 @@ async function deleteAll(type) {
   toast('✅ Semua data ' + type.toUpperCase() + ' dihapus.');
   clearSelect(type);
   toggleDeleteMode(type); // matikan delete mode
-  if(type==='bus')loadBus(); else if(type==='spbu')loadSpbu(); else if(type==='bbm')loadBBM(); else if(type==='ops')loadOps();
+  if(type==='bus'){ markStale('bus'); loadBus(true); }
+  else if(type==='spbu'){ markStale('spbu'); loadSpbu(true); }
+  else if(type==='bbm'){ markStale('bbm','ops'); Promise.all([loadBBM(true),loadOps(true)]).then(renderAntrian); }
+  else if(type==='ops'){ markStale('ops','bbm'); Promise.all([loadOps(true),loadBBM(true)]).then(renderAntrian); }
   updateDashboard();
 }
 
@@ -692,21 +737,28 @@ async function delBusById(id) {
   try {
     var res = await db.from('bus').delete().eq('id', id);
     if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
-    toast('Data bus dihapus.'); loadBus(); updateDashboard();
+    toast('Data bus dihapus.'); markStale('bus'); loadBus(true); updateDashboard();
   } catch(e) { toast('Gagal hapus: ' + (e.message||'Network error'), true); }
 }
 
 // ============================================================
 // SPBU
 // ============================================================
-async function loadSpbu() {
+async function loadSpbu(forceRefresh) {
+  if (!forceRefresh && !DB_STALE.spbu && DB.spbu.length) { renderSpbu(); applyFreeze('tbl-spbu'); populateSpbuDropdowns(); return; }
+  if (DB_LOADING.spbu && DB_LOADING_PROMISE.spbu) return DB_LOADING_PROMISE.spbu;
+  DB_LOADING.spbu = true;
   setLoading('tbody-spbu', 6);
-  var r = await fetchAll('spbu', 'created_at', false);
-  if (r.error) return toast('Gagal memuat SPBU: ' + r.error.message, true);
-  DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode||'', nama:d.nama, alamat:d.alamat||'', hp:d.hp||'', aktif:d.aktif }; });
-  DB_FILTER.spbu = null;
-  renderSpbu();
-  applyFreeze('tbl-spbu'); populateSpbuDropdowns();
+  DB_LOADING_PROMISE.spbu = (async function() {
+    var r = await fetchAll('spbu', 'created_at', false);
+    DB_LOADING.spbu = false; DB_LOADING_PROMISE.spbu = null;
+    if (r.error) { toast('Gagal memuat SPBU: ' + r.error.message, true); return; }
+    DB.spbu = r.data.map(function(d) { return { id:d.id, kode:d.kode||'', nama:d.nama, alamat:d.alamat||'', hp:d.hp||'', aktif:d.aktif }; });
+    DB_STALE.spbu = false;
+    DB_FILTER.spbu = null;
+    renderSpbu(); applyFreeze('tbl-spbu'); populateSpbuDropdowns();
+  })();
+  return DB_LOADING_PROMISE.spbu;
 }
 async function saveSpbu() {
   var nama = document.getElementById('spbu-nama').value.trim();
@@ -716,7 +768,7 @@ async function saveSpbu() {
   if (editIdx.spbu >= 0) { res = await db.from('spbu').update(row).eq('id', DB.spbu[editIdx.spbu].id); if (!res.error) toast('Data SPBU diperbarui!'); }
   else { res = await db.from('spbu').insert(row); if (!res.error) toast('Data SPBU disimpan!'); }
   if (res.error) return toast('Error: ' + res.error.message, true);
-  closeModal('modal-spbu'); loadSpbu(); updateDashboard();
+  markStale('spbu'); closeModal('modal-spbu'); loadSpbu(true); updateDashboard();
 }
 function renderSpbu() {
   var tbody = document.getElementById('tbody-spbu');
@@ -749,7 +801,7 @@ async function delSpbuById(id) {
   try {
     var res = await db.from('spbu').delete().eq('id', id);
     if (res.error) return toast('Gagal hapus: ' + res.error.message, true);
-    toast('Data SPBU dihapus.'); loadSpbu(); updateDashboard();
+    toast('Data SPBU dihapus.'); markStale('spbu'); loadSpbu(true); updateDashboard();
   } catch(e) { toast('Gagal hapus: ' + (e.message||'Network error'), true); }
 }
 
@@ -775,17 +827,27 @@ function autofillBBM() {
   document.getElementById('bbm-jalur').value = bus ? bus.jalur : '';
   document.getElementById('bbm-nopol').value = bus ? bus.nopol : '';
 }
-async function loadBBM() {
+async function loadBBM(forceRefresh) {
+  // Jika data masih fresh dan tidak dipaksa refresh, pakai cache
+  if (!forceRefresh && !DB_STALE.bbm && DB.bbm.length) {
+    renderBBM(); renderAntrian(); return;
+  }
+  // Jika sedang ada fetch aktif, tunggu promise yang sama (jangan dobel fetch)
+  if (DB_LOADING.bbm && DB_LOADING_PROMISE.bbm) return DB_LOADING_PROMISE.bbm;
+  DB_LOADING.bbm = true;
   setLoading('tbody-bbm', 12);
-  var r = await fetchAll('bbm', 'tgl', false);
-  if (r.error) return toast('Gagal memuat BBM: ' + r.error.message, true);
-  DB.bbm = r.data.map(function(d){
-    return {id:String(d.id),tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};
-  });
-  DB_FILTER.bbm = null;
-  renderBBM();
-  renderAntrian();
-  applyFreeze('tbl-bbm');
+  DB_LOADING_PROMISE.bbm = (async function() {
+    var r = await fetchAll('bbm', 'tgl', false, 'lambung', true);
+    DB_LOADING.bbm = false; DB_LOADING_PROMISE.bbm = null;
+    if (r.error) { toast('Gagal memuat BBM: ' + r.error.message, true); return; }
+    DB.bbm = r.data.map(function(d){
+      return {id:String(d.id),tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,waktu:d.waktu,nominal:Number(d.nominal)||0,spbu:d.spbu,halte:d.halte,jamHalte:d.jam_halte,ket:d.ket};
+    });
+    DB_STALE.bbm = false;
+    DB_FILTER.bbm = null;
+    renderBBM(); renderAntrian(); applyFreeze('tbl-bbm');
+  })();
+  return DB_LOADING_PROMISE.bbm;
 }
 async function saveBBM() {
   var ctx = saveBBMCore(); if (!ctx) return;
@@ -796,7 +858,11 @@ async function saveBBM() {
 }
 function renderBBM() {
   var tbody=document.getElementById('tbody-bbm');
-  var arr = DB_FILTER.bbm !== null ? DB_FILTER.bbm : DB.bbm;
+  var arr = (DB_FILTER.bbm !== null ? DB_FILTER.bbm : DB.bbm).slice();
+  arr.sort(function(a,b){
+    if(a.tgl > b.tgl) return -1; if(a.tgl < b.tgl) return 1;
+    return Number(a.lambung)||a.lambung < Number(b.lambung)||b.lambung ? -1 : 1;
+  });
   if(!arr.length){tbody.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="fas fa-fill-drip"></i><p>Belum ada data BBM</p></div></td></tr>';return;}
   // ── Matching murni tgl+lambung: BBM "Selesai" kalau ada Ops dengan tgl+lambung sama ──
   // Tidak bergantung bbm_id / status field — bebas urutan input
@@ -836,7 +902,8 @@ async function delBBMById(id) {
     var res=await db.from('bbm').delete().eq('id',id);
     if(res.error)return toast('Gagal hapus: '+res.error.message,true);
     toast('Data BBM dihapus.');
-    Promise.all([loadBBM(), loadOps()]).then(function(){ renderAntrian(); updateDashboard(); });
+    markStale('bbm','ops');
+    Promise.all([loadBBM(true), loadOps(true)]).then(function(){ renderAntrian(); updateDashboard(); });
   } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
 }
 
@@ -921,15 +988,23 @@ function calcOps() {
     document.getElementById('ops-ratio').value = '';
   }
 }
-async function loadOps() {
+async function loadOps(forceRefresh) {
+  if (!forceRefresh && !DB_STALE.ops && DB.ops.length) {
+    renderOps(); renderAntrian(); return;
+  }
+  if (DB_LOADING.ops && DB_LOADING_PROMISE.ops) return DB_LOADING_PROMISE.ops;
+  DB_LOADING.ops = true;
   setLoading('tbody-ops',17);
-  var r=await fetchAll('operasional','tgl',false);
-  if(r.error)return toast('Gagal memuat operasional: '+r.error.message,true);
-  DB.ops=r.data.map(function(d){return{id:String(d.id),tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
-  DB_FILTER.ops = null;
-  renderOps();
-  renderAntrian();
-  applyFreeze('tbl-ops');
+  DB_LOADING_PROMISE.ops = (async function() {
+    var r = await fetchAll('operasional','tgl',false,'lambung',true);
+    DB_LOADING.ops = false; DB_LOADING_PROMISE.ops = null;
+    if(r.error){ toast('Gagal memuat operasional: '+r.error.message,true); return; }
+    DB.ops=r.data.map(function(d){return{id:String(d.id),tgl:String(d.tgl||'').substring(0,10),lambung:String(d.lambung||'').trim(),jalur:d.jalur,nopol:d.nopol,jamMulai:d.jam_mulai,jamAkhir:d.jam_akhir,kmAwalPool:d.km_awal_pool,kmAkhirPool:d.km_akhir_pool,kmAwalHalte:d.km_awal_halte,kmAkhirHalte:d.km_akhir_halte,bbm:d.bbm_rp,rit:d.rit,kmTempuh:d.km_tempuh,ratio:d.ratio,ket:d.ket};});
+    DB_STALE.ops = false;
+    DB_FILTER.ops = null;
+    renderOps(); renderAntrian(); applyFreeze('tbl-ops');
+  })();
+  return DB_LOADING_PROMISE.ops;
 }
 // ============================================================
 // ANTRIAN BBM → OPS
@@ -1086,7 +1161,11 @@ function saveOps() {
 }
 function renderOps() {
   var tbody=document.getElementById('tbody-ops');
-  var arr = DB_FILTER.ops !== null ? DB_FILTER.ops : DB.ops;
+  var arr = (DB_FILTER.ops !== null ? DB_FILTER.ops : DB.ops).slice();
+  arr.sort(function(a,b){
+    if(a.tgl > b.tgl) return -1; if(a.tgl < b.tgl) return 1;
+    return (Number(a.lambung)||0) - (Number(b.lambung)||0) || String(a.lambung).localeCompare(String(b.lambung));
+  });
   if(!arr.length){tbody.innerHTML='<tr><td colspan="18"><div class="empty-state"><i class="fas fa-clipboard-list"></i><p>Belum ada data operasional</p></div></td></tr>';return;}
   // ── Matching murni tgl+lambung: Ops "Selesai" kalau ada BBM dengan tgl+lambung sama ──
   var bbmPasangan = {};
@@ -1140,7 +1219,8 @@ async function delOpsById(id) {
     var res=await db.from('operasional').delete().eq('id',id);
     if(res.error)return toast('Gagal hapus: '+res.error.message,true);
     toast('Data operasional dihapus.');
-    Promise.all([loadOps(), loadBBM()]).then(function(){ renderAntrian(); updateDashboard(); });
+    markStale('ops','bbm');
+    Promise.all([loadOps(true), loadBBM(true)]).then(function(){ renderAntrian(); updateDashboard(); });
   } catch(e) { toast('Gagal hapus: '+(e.message||'Network error'),true); }
 }
 
@@ -1676,7 +1756,7 @@ async function importData(type, input) {
         // Fetch fresh BBM dari Supabase untuk lookup akurat
         var bbmLookup = {};
         toast('⏳ Mengambil data BBM...');
-        var bbmFetch = await fetchAll('bbm','tgl',false);
+        var bbmFetch = await fetchAll('bbm','tgl',false,'lambung',true);
         var bbmSource = (bbmFetch.data && bbmFetch.data.length) ? bbmFetch.data : DB.bbm;
         bbmSource.forEach(function(b){
           var key = b.tgl+'|'+String(b.lambung).trim();
@@ -1708,7 +1788,10 @@ async function importData(type, input) {
         inserted+=chunk.length;
       }
       input.value='';
-      if(type==='bus')await loadBus();if(type==='spbu')await loadSpbu();if(type==='bbm')await loadBBM();if(type==='ops')await loadOps();
+      if(type==='bus'){ markStale('bus'); await loadBus(true); }
+      if(type==='spbu'){ markStale('spbu'); await loadSpbu(true); }
+      if(type==='bbm'){ markStale('bbm','ops'); await loadBBM(true); }
+      if(type==='ops'){ markStale('ops','bbm'); await loadOps(true); }
       updateDashboard();toast('✅ Import '+inserted+' data berhasil!');
     }catch(err){toast('Gagal import: '+err.message,true);}
   };
@@ -1806,8 +1889,9 @@ async function updateDashboard() {
 async function refreshData() {
   var page=document.querySelector('.page.active');
   var id=page?page.id.replace('page-',''):'';
-  if(id==='data-bus')await loadBus();if(id==='data-spbu')await loadSpbu();
-  if(id==='input-bbm')await loadBBM();if(id==='input-ops')await loadOps();
+  markStale('bus','spbu','bbm','ops');
+  if(id==='data-bus')await loadBus(true); if(id==='data-spbu')await loadSpbu(true);
+  if(id==='input-bbm')await loadBBM(true); if(id==='input-ops')await loadOps(true);
   await updateDashboard();toast('Data diperbarui!');
 }
 
