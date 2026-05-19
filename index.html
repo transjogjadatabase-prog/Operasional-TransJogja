@@ -1,388 +1,335 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Sistem Operasional TransJogja — manajemen armada bus, logistik BBM, dan rekam operasional harian berbasis web untuk PT Jogja Tugu Trans.">
+<title>Sistem Operasional TransJogja</title>
 
-  <!-- FIX #10: Meta description untuk SEO -->
-  <meta name="description" content="Sistem Operasional TransJogja — manajemen armada bus, logistik BBM, dan rekam operasional harian berbasis web untuk PT Jogja Tugu Trans.">
+<!-- Preconnect -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
-  <title>Sistem Operasional TransJogja</title>
+<!-- Preload FA woff2 -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.woff2"
+      as="font" type="font/woff2" crossorigin>
 
-  <!--
-    ============================================================
-    FIX #3: PRECONNECT — sambungkan ke origin kritis SEBELUM
-    browser menemukannya di HTML. Hemat 1 RTT per origin.
-    Max 4 hint; prioritaskan CDN font dan FA karena ada di
-    critical chain path (876ms latensi asli).
-    ============================================================
-  -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<!-- Fonts: DM Serif Display + Outfit -->
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap">
 
-  <!--
-    FIX #3 + #5: PRELOAD font paling kritis (Inter & FA woff2).
-    - as="font" + crossorigin wajib agar preload valid.
-    - Subset huruf Latin sudah cukup untuk UI bahasa Indonesia.
-    - FA woff2 fa-solid-900 ada di critical chain — preload
-      mengurangi waktu blokir render font icon sidebar/menu.
-  -->
-  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.woff2"
-        as="font" type="font/woff2" crossorigin>
+<!-- FontAwesome -->
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <!--
-    FIX #5: font-display=swap sudah termasuk di Google Fonts URL
-    via parameter &display=swap — teks tetap terlihat selama font dimuat.
-    FIX #8: Hanya muat 2 font family (Inter + Playfair Display),
-    hapus Cormorant Garamond & DM Sans yang tidak digunakan di CSS.
-  -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap">
-
-  <!--
-    FIX #8: FontAwesome — CSS tetap di <head> karena dibutuhkan
-    sebelum render (icon sidebar). Ukurannya 19KB, tidak bisa
-    dihindari sepenuhnya, tapi preconnect + preload woff2 di atas
-    sudah memotong latensi chain-nya.
-    CATATAN untuk produksi: ganti dengan subset FA via fontawesome.com/kits
-    untuk hemat ~18KB (hanya load icon yang benar-benar dipakai).
-  -->
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-  <!-- Stylesheet aplikasi — first-party, kecil (7.5KB), aman di <head> -->
-  <link rel="stylesheet" href="style.css">
+<!-- App Stylesheet -->
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- ============================================================
-       LAYAR LOGIN
-  ============================================================ -->
-  <div id="login-screen" style="display:none;">
-    <div class="login-box">
-      <div class="login-logo">
-        <i class="fas fa-bus-alt"></i>
-      </div>
-      <h1 class="login-title">SISTEM OPERASIONAL</h1>
-      <p class="sub">TransJogja</p>
-      <form onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <label for="login-user">Username</label>
-          <input type="text" id="login-user" placeholder="Masukkan username" autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label for="login-pass">Password</label>
-          <input type="password" id="login-pass" placeholder="Masukkan password" autocomplete="current-password">
-        </div>
-        <p id="login-error" class="error-msg" aria-live="polite"></p>
-        <button type="submit" class="btn-login">
-          <i class="fas fa-sign-in-alt"></i> Masuk
-        </button>
-      </form>
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="login-screen" style="display:none;">
+  <div class="login-box">
+    <div class="login-logo">
+      <i class="fas fa-bus-alt"></i>
     </div>
+    <h1 class="login-title">Sistem Operasional</h1>
+    <p class="sub">TransJogja</p>
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="login-user">Username</label>
+        <input type="text" id="login-user" placeholder="Masukkan username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="login-pass">Password</label>
+        <input type="password" id="login-pass" placeholder="Masukkan password" autocomplete="current-password">
+      </div>
+      <p id="login-error" class="error-msg" aria-live="polite"></p>
+      <button type="submit" class="btn-login">
+        <i class="fas fa-sign-in-alt"></i> Masuk
+      </button>
+    </form>
   </div>
+</div>
 
-  <!-- ============================================================
-       APP SCREEN
-  ============================================================ -->
-  <div id="app-screen" style="display:none;">
+<!-- ========== APP SCREEN ========== -->
+<div id="app-screen" style="display:none;">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar open" id="sidebar" aria-label="Menu navigasi">
-      <div class="sidebar-header">
-        <div class="logo-area">
-          <i class="fas fa-bus-alt logo-icon" aria-hidden="true"></i>
-          <div class="logo-text">
-            <span class="logo-main">TransJogja</span>
-            <span class="logo-sub">SISTEM OPERASIONAL</span>
-          </div>
-        </div>
-        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Tutup/buka sidebar">
-          <i class="fas fa-bars" aria-hidden="true"></i>
-        </button>
-      </div>
-
-      <div class="user-card">
-        <div class="user-avatar" aria-hidden="true">
-          <i class="fas fa-user-circle"></i>
-        </div>
-        <div class="user-info">
-          <span class="user-name" id="user-display-name">—</span>
-          <!-- FIX #9: role menggunakan warna yang punya kontras cukup (lihat style.css) -->
-          <span class="role" id="user-display-role">—</span>
+  <!-- SIDEBAR -->
+  <aside class="sidebar open" id="sidebar" aria-label="Menu navigasi">
+    <div class="sidebar-header">
+      <div class="logo-area">
+        <i class="fas fa-bus-alt logo-icon" aria-hidden="true"></i>
+        <div class="logo-text">
+          <span class="logo-main">TransJogja</span>
+          <span class="logo-sub">Sistem Operasional</span>
         </div>
       </div>
+      <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+      </button>
+    </div>
 
-      <nav aria-label="Menu utama">
-        <!-- FIX #9: label section sidebar pakai class kontras-tinggi (.sidebar-section-label) -->
-        <div class="sidebar-section-label" aria-hidden="true">MENU UTAMA</div>
-        <ul class="sidebar-menu" role="list">
-          <li id="menu-dashboard" onclick="switchPage('dashboard')" role="listitem">
-            <i class="fas fa-tachometer-alt" aria-hidden="true"></i>
-            <span>Dashboard</span>
-          </li>
-        </ul>
-
-        <div class="sidebar-section-label" aria-hidden="true">DATA MASTER</div>
-        <ul class="sidebar-menu" role="list">
-          <li id="menu-bus" onclick="switchPage('data-bus')" role="listitem">
-            <i class="fas fa-bus" aria-hidden="true"></i>
-            <span>Data Bus</span>
-          </li>
-          <li id="menu-spbu" onclick="switchPage('data-spbu')" role="listitem">
-            <i class="fas fa-gas-pump" aria-hidden="true"></i>
-            <span>Data SPBU</span>
-          </li>
-        </ul>
-
-        <div class="sidebar-section-label" aria-hidden="true">INPUT DATA</div>
-        <ul class="sidebar-menu" role="list">
-          <li id="menu-bbm" onclick="switchPage('input-bbm')" role="listitem">
-            <i class="fas fa-oil-can" aria-hidden="true"></i>
-            <span>Logistik BBM</span>
-          </li>
-          <li id="menu-ops" onclick="switchPage('input-ops')" role="listitem">
-            <i class="fas fa-clipboard-list" aria-hidden="true"></i>
-            <span>Operasional Harian</span>
-          </li>
-        </ul>
-
-        <div class="sidebar-section-label" aria-hidden="true">LAPORAN</div>
-        <ul class="sidebar-menu" role="list">
-          <li id="menu-lap-bbm-waktu" onclick="switchPage('lap-bbm-waktu')" role="listitem">
-            <i class="fas fa-clock" aria-hidden="true"></i>
-            <span>Waktu Pengisian BBM</span>
-          </li>
-          <li id="menu-lap-bbm" onclick="switchPage('lap-bbm')" role="listitem">
-            <i class="fas fa-chart-bar" aria-hidden="true"></i>
-            <span>Laporan BBM</span>
-          </li>
-          <li id="menu-lap-ops" onclick="switchPage('lap-ops')" role="listitem">
-            <i class="fas fa-chart-line" aria-hidden="true"></i>
-            <span>Laporan Operasional</span>
-          </li>
-          <li id="menu-lap-gabungan" onclick="switchPage('lap-gabungan')" role="listitem">
-            <i class="fas fa-layer-group" aria-hidden="true"></i>
-            <span>Laporan Gabungan</span>
-          </li>
-          <li id="menu-lap-harian" onclick="switchPage('lap-harian')" role="listitem">
-            <i class="fas fa-calendar-day" aria-hidden="true"></i>
-            <span>Laporan Harian</span>
-          </li>
-          <li id="menu-lap-efisiensi" onclick="switchPage('lap-efisiensi')" role="listitem">
-            <i class="fas fa-bolt" aria-hidden="true"></i>
-            <span>Analitik Efisiensi</span>
-          </li>
-        </ul>
-
-        <div class="sidebar-section-label" aria-hidden="true">ADMIN</div>
-        <ul class="sidebar-menu" role="list">
-          <li id="menu-akun" onclick="switchPage('manajemen-akun')" role="listitem">
-            <i class="fas fa-users-cog" aria-hidden="true"></i>
-            <span>Manajemen Akun</span>
-          </li>
-        </ul>
-      </nav>
-
-      <div class="sidebar-footer">
-        <!-- FIX #9: role text diperbarui di CSS agar kontras memadai -->
-        <span class="role" id="sidebar-role">Operator TransJogja</span>
-        <button class="btn-logout" onclick="handleLogout()" aria-label="Keluar dari sistem">
-          <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-          <span>Keluar</span>
-        </button>
+    <div class="user-card">
+      <div class="user-avatar" aria-hidden="true"><i class="fas fa-user-circle"></i></div>
+      <div class="user-info">
+        <span class="user-name" id="user-display-name">—</span>
+        <span class="role" id="user-display-role">—</span>
       </div>
-    </aside>
+    </div>
 
-    <!-- MAIN CONTENT -->
-    <main id="main-content" aria-label="Konten utama">
+    <nav aria-label="Menu utama">
+      <div class="sidebar-section-label">Menu Utama</div>
+      <ul class="sidebar-menu" role="list">
+        <li id="menu-dashboard" onclick="switchPage('dashboard')" role="listitem">
+          <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
+        </li>
+      </ul>
 
-      <!-- TOP BAR -->
-      <div class="topbar">
-        <button class="topbar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
-          <i class="fas fa-bars" aria-hidden="true"></i>
-        </button>
-        <div class="topbar-title">Sistem Operasional TransJogja</div>
-        <button class="btn-refresh" onclick="refreshData()" title="Refresh data" aria-label="Refresh data">
-          <i class="fas fa-sync-alt" aria-hidden="true"></i>
-        </button>
-      </div>
+      <div class="sidebar-section-label">Data Master</div>
+      <ul class="sidebar-menu" role="list">
+        <li id="menu-bus" onclick="switchPage('data-bus')" role="listitem">
+          <i class="fas fa-bus"></i><span>Data Bus</span>
+        </li>
+        <li id="menu-spbu" onclick="switchPage('data-spbu')" role="listitem">
+          <i class="fas fa-gas-pump"></i><span>Data SPBU</span>
+        </li>
+      </ul>
 
-      <!-- ======================================================
-           PAGE: DASHBOARD
-      ====================================================== -->
-      <section class="page active" id="page-dashboard" aria-labelledby="title-dashboard">
-        <div class="page-header">
-          <h2 id="title-dashboard" class="page-title"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Dashboard</h2>
+      <div class="sidebar-section-label">Input Data</div>
+      <ul class="sidebar-menu" role="list">
+        <li id="menu-bbm" onclick="switchPage('input-bbm')" role="listitem">
+          <i class="fas fa-oil-can"></i><span>Logistik BBM</span>
+        </li>
+        <li id="menu-ops" onclick="switchPage('input-ops')" role="listitem">
+          <i class="fas fa-clipboard-list"></i><span>Operasional Harian</span>
+        </li>
+      </ul>
+
+      <div class="sidebar-section-label">Laporan</div>
+      <ul class="sidebar-menu" role="list">
+        <li id="menu-lap-bbm-waktu" onclick="switchPage('lap-bbm-waktu')" role="listitem">
+          <i class="fas fa-clock"></i><span>Waktu Pengisian BBM</span>
+        </li>
+        <li id="menu-lap-bbm" onclick="switchPage('lap-bbm')" role="listitem">
+          <i class="fas fa-chart-bar"></i><span>Laporan BBM</span>
+        </li>
+        <li id="menu-lap-ops" onclick="switchPage('lap-ops')" role="listitem">
+          <i class="fas fa-chart-line"></i><span>Laporan Operasional</span>
+        </li>
+        <li id="menu-lap-gabungan" onclick="switchPage('lap-gabungan')" role="listitem">
+          <i class="fas fa-layer-group"></i><span>Laporan Gabungan</span>
+        </li>
+        <li id="menu-lap-harian" onclick="switchPage('lap-harian')" role="listitem">
+          <i class="fas fa-calendar-day"></i><span>Laporan Harian</span>
+        </li>
+        <li id="menu-lap-efisiensi" onclick="switchPage('lap-efisiensi')" role="listitem">
+          <i class="fas fa-bolt"></i><span>Analitik Efisiensi</span>
+        </li>
+      </ul>
+
+      <div class="sidebar-section-label">Admin</div>
+      <ul class="sidebar-menu" role="list">
+        <li id="menu-akun" onclick="switchPage('manajemen-akun')" role="listitem">
+          <i class="fas fa-users-cog"></i><span>Manajemen Akun</span>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span class="role" id="sidebar-role">Operator TransJogja</span>
+      <button class="btn-logout" onclick="handleLogout()" aria-label="Keluar dari sistem">
+        <i class="fas fa-sign-out-alt"></i><span>Keluar</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main id="main-content" aria-label="Konten utama">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button class="topbar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="topbar-title">Sistem Operasional TransJogja</div>
+      <button class="btn-refresh" onclick="refreshData()" title="Refresh data" aria-label="Refresh data">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <section class="page active" id="page-dashboard" aria-labelledby="title-dashboard">
+      <div class="page-header">
+        <div>
+          <h2 id="title-dashboard" class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
           <p class="page-subtitle">Ringkasan operasional bulan ini</p>
         </div>
+      </div>
 
-        <div class="dashboard-grid">
-          <div class="card stat-card">
-            <div class="stat-icon bg-green"><i class="fas fa-bus" aria-hidden="true"></i></div>
-            <div class="stat-info">
-              <div class="stat-value" id="dash-total-bus">—</div>
-              <div class="stat-label">Total Armada Bus</div>
-            </div>
-          </div>
-          <div class="card stat-card">
-            <div class="stat-icon bg-blue"><i class="fas fa-road" aria-hidden="true"></i></div>
-            <div class="stat-info">
-              <div class="stat-value" id="dash-total-km">—</div>
-              <div class="stat-label">Total KM Bulan Ini</div>
-            </div>
-          </div>
-          <div class="card stat-card">
-            <div class="stat-icon bg-orange"><i class="fas fa-gas-pump" aria-hidden="true"></i></div>
-            <div class="stat-info">
-              <div class="stat-value" id="dash-total-liter">—</div>
-              <div class="stat-label">Konsumsi BBM Bulan Ini</div>
-            </div>
-          </div>
-          <div class="card stat-card">
-            <div class="stat-icon bg-purple"><i class="fas fa-chart-line" aria-hidden="true"></i></div>
-            <div class="stat-info">
-              <div class="stat-value" id="dash-avg-ratio">—</div>
-              <div class="stat-label">Rata-rata Efisiensi</div>
-            </div>
+      <div class="dashboard-grid">
+        <div class="card stat-card">
+          <div class="stat-icon bg-green"><i class="fas fa-bus"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="dash-total-bus">—</div>
+            <div class="stat-label">Total Armada Bus</div>
           </div>
         </div>
+        <div class="card stat-card">
+          <div class="stat-icon bg-blue"><i class="fas fa-road"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="dash-total-km">—</div>
+            <div class="stat-label">Total KM Bulan Ini</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon bg-orange"><i class="fas fa-gas-pump"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="dash-total-liter">—</div>
+            <div class="stat-label">Konsumsi BBM Bulan Ini</div>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon bg-purple"><i class="fas fa-chart-line"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="dash-avg-ratio">—</div>
+            <div class="stat-label">Rata-rata Efisiensi</div>
+          </div>
+        </div>
+      </div>
 
-        <div class="dashboard-grid-bottom">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-chart-bar" aria-hidden="true"></i> Pengisian BBM per Hari</h3>
-              <!-- FIX #9: subtitle menggunakan class dengan kontras lebih tinggi -->
-              <span class="card-subtitle">7 hari terakhir</span>
-            </div>
-            <div id="chart-bbm" class="chart-placeholder">
-              <i class="fas fa-chart-bar" aria-hidden="true"></i>
-              <p>Belum ada data BBM</p>
-            </div>
+      <div class="dashboard-grid-bottom">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-bar"></i> Pengisian BBM per Hari</h3>
+            <span class="card-subtitle">7 hari terakhir</span>
           </div>
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-history" aria-hidden="true"></i> Aktivitas Terbaru</h3>
-              <span class="card-subtitle">Log input terkini</span>
-            </div>
-            <div id="recent-activity-list" aria-live="polite">
-              <div class="empty-state">
-                <i class="fas fa-history" aria-hidden="true"></i>
-                <p>Belum ada aktivitas</p>
-              </div>
-            </div>
+          <div id="chart-bbm" class="chart-placeholder">
+            <i class="fas fa-chart-bar"></i>
+            <p>Belum ada data BBM</p>
           </div>
         </div>
-      </section>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-history"></i> Aktivitas Terbaru</h3>
+            <span class="card-subtitle">Log input terkini</span>
+          </div>
+          <div id="recent-activity-list" aria-live="polite">
+            <div class="empty-state"><i class="fas fa-history"></i><p>Belum ada aktivitas</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <!-- ======================================================
-           PAGE: DATA BUS
-      ====================================================== -->
-      <section class="page" id="page-data-bus" aria-labelledby="title-bus">
-        <div class="page-header">
-          <h2 id="title-bus" class="page-title"><i class="fas fa-bus" aria-hidden="true"></i> Data Armada Bus</h2>
-          <div class="page-actions">
-            <input type="text" id="search-bus" class="search-input" placeholder="Cari nopol / lambung / jenis..." oninput="renderBusTable()" aria-label="Cari armada bus">
-            <button class="btn-primary" onclick="addBusBtn()"><i class="fas fa-plus" aria-hidden="true"></i> Tambah Bus</button>
-            <button class="btn-export" onclick="exportToExcel('table-bus', 'DataBus')"><i class="fas fa-file-excel" aria-hidden="true"></i> Excel</button>
-            <button class="btn-export btn-pdf" onclick="exportToPDF('table-bus', 'Data Armada Bus')"><i class="fas fa-file-pdf" aria-hidden="true"></i> PDF</button>
-          </div>
+    <!-- ===== DATA BUS ===== -->
+    <section class="page" id="page-data-bus" aria-labelledby="title-bus">
+      <div class="page-header">
+        <div>
+          <h2 id="title-bus" class="page-title"><i class="fas fa-bus"></i> Data Armada Bus</h2>
         </div>
-        <div class="table-wrapper">
-          <table id="table-bus" aria-label="Tabel armada bus">
-            <thead><tr><th>#</th><th>No. Polisi</th><th>No. Lambung</th><th>Jenis</th><th>Aksi</th></tr></thead>
-            <tbody id="table-bus-body"></tbody>
-          </table>
+        <div class="page-actions">
+          <input type="text" id="search-bus" class="search-input" placeholder="Cari nopol / lambung / jenis…" oninput="renderBusTable()" aria-label="Cari armada bus">
+          <button class="btn-primary" onclick="addBusBtn()"><i class="fas fa-plus"></i> Tambah Bus</button>
+          <button class="btn-export" onclick="exportToExcel('table-bus','DataBus')"><i class="fas fa-file-excel"></i> Excel</button>
+          <button class="btn-export btn-pdf" onclick="exportToPDF('table-bus','Data Armada Bus')"><i class="fas fa-file-pdf"></i> PDF</button>
         </div>
-      </section>
+      </div>
+      <div class="table-wrapper">
+        <table id="table-bus" aria-label="Tabel armada bus">
+          <thead><tr><th>#</th><th>No. Polisi</th><th>No. Lambung</th><th>Jenis</th><th>Aksi</th></tr></thead>
+          <tbody id="table-bus-body"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <!-- ======================================================
-           PAGE: DATA SPBU
-      ====================================================== -->
-      <section class="page" id="page-data-spbu" aria-labelledby="title-spbu">
-        <div class="page-header">
-          <h2 id="title-spbu" class="page-title"><i class="fas fa-gas-pump" aria-hidden="true"></i> Data SPBU</h2>
-          <div class="page-actions">
-            <input type="text" id="search-spbu" class="search-input" placeholder="Cari nama / lokasi SPBU..." oninput="renderSpbuTable()" aria-label="Cari SPBU">
-            <button class="btn-primary" onclick="addSpbuBtn()"><i class="fas fa-plus" aria-hidden="true"></i> Tambah SPBU</button>
-            <button class="btn-export" onclick="exportToExcel('table-spbu', 'DataSPBU')"><i class="fas fa-file-excel" aria-hidden="true"></i> Excel</button>
-            <button class="btn-export btn-pdf" onclick="exportToPDF('table-spbu', 'Data SPBU')"><i class="fas fa-file-pdf" aria-hidden="true"></i> PDF</button>
-          </div>
+    <!-- ===== DATA SPBU ===== -->
+    <section class="page" id="page-data-spbu" aria-labelledby="title-spbu">
+      <div class="page-header">
+        <div>
+          <h2 id="title-spbu" class="page-title"><i class="fas fa-gas-pump"></i> Data SPBU</h2>
         </div>
-        <div class="table-wrapper">
-          <table id="table-spbu" aria-label="Tabel SPBU">
-            <thead><tr><th>#</th><th>Nama SPBU</th><th>Lokasi</th><th>Keterangan</th><th>Aksi</th></tr></thead>
-            <tbody id="table-spbu-body"></tbody>
-          </table>
+        <div class="page-actions">
+          <input type="text" id="search-spbu" class="search-input" placeholder="Cari nama / lokasi SPBU…" oninput="renderSpbuTable()" aria-label="Cari SPBU">
+          <button class="btn-primary" onclick="addSpbuBtn()"><i class="fas fa-plus"></i> Tambah SPBU</button>
+          <button class="btn-export" onclick="exportToExcel('table-spbu','DataSPBU')"><i class="fas fa-file-excel"></i> Excel</button>
+          <button class="btn-export btn-pdf" onclick="exportToPDF('table-spbu','Data SPBU')"><i class="fas fa-file-pdf"></i> PDF</button>
         </div>
-      </section>
+      </div>
+      <div class="table-wrapper">
+        <table id="table-spbu" aria-label="Tabel SPBU">
+          <thead><tr><th>#</th><th>Nama SPBU</th><th>Lokasi</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+          <tbody id="table-spbu-body"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <!-- ======================================================
-           PAGE: LOGISTIK BBM
-      ====================================================== -->
-      <section class="page" id="page-input-bbm" aria-labelledby="title-bbm">
-        <div class="page-header">
-          <h2 id="title-bbm" class="page-title"><i class="fas fa-oil-can" aria-hidden="true"></i> Logistik BBM</h2>
-          <div class="page-actions">
-            <input type="date" id="filter-bbm-tgl" class="filter-input" onchange="renderBbmTable()" aria-label="Filter tanggal BBM">
-            <select id="filter-bbm-spbu" class="filter-input" onchange="renderBbmTable()" aria-label="Filter SPBU">
-              <option value="">-- Semua SPBU --</option>
-            </select>
-            <button class="btn-primary" onclick="addBbmBtn()"><i class="fas fa-plus" aria-hidden="true"></i> Input BBM</button>
-            <button class="btn-export" onclick="exportToExcel('table-bbm', 'LogistikBBM')"><i class="fas fa-file-excel" aria-hidden="true"></i> Excel</button>
-            <button class="btn-export btn-pdf" onclick="exportToPDF('table-bbm', 'Logistik BBM')"><i class="fas fa-file-pdf" aria-hidden="true"></i> PDF</button>
-          </div>
+    <!-- ===== LOGISTIK BBM ===== -->
+    <section class="page" id="page-input-bbm" aria-labelledby="title-bbm">
+      <div class="page-header">
+        <div>
+          <h2 id="title-bbm" class="page-title"><i class="fas fa-oil-can"></i> Logistik BBM</h2>
         </div>
-        <div class="table-wrapper">
-          <table id="table-bbm" aria-label="Tabel logistik BBM">
-            <thead><tr><th>#</th><th>Tanggal</th><th>Jenis</th><th>SPBU</th><th>Bus</th><th>Liter</th><th>Keterangan</th><th>Aksi</th></tr></thead>
-            <tbody id="table-bbm-body"></tbody>
-          </table>
+        <div class="page-actions">
+          <input type="date" id="filter-bbm-tgl" class="filter-input" onchange="renderBbmTable()">
+          <select id="filter-bbm-spbu" class="filter-input" onchange="renderBbmTable()">
+            <option value="">— Semua SPBU —</option>
+          </select>
+          <button class="btn-primary" onclick="addBbmBtn()"><i class="fas fa-plus"></i> Input BBM</button>
+          <button class="btn-export" onclick="exportToExcel('table-bbm','LogistikBBM')"><i class="fas fa-file-excel"></i> Excel</button>
+          <button class="btn-export btn-pdf" onclick="exportToPDF('table-bbm','Logistik BBM')"><i class="fas fa-file-pdf"></i> PDF</button>
         </div>
-      </section>
+      </div>
+      <div class="table-wrapper">
+        <table id="table-bbm" aria-label="Tabel logistik BBM">
+          <thead><tr><th>#</th><th>Tanggal</th><th>Jenis</th><th>SPBU</th><th>Bus</th><th>Liter</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+          <tbody id="table-bbm-body"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <!-- ======================================================
-           PAGE: OPERASIONAL HARIAN
-      ====================================================== -->
-      <section class="page" id="page-input-ops" aria-labelledby="title-ops">
-        <div class="page-header">
-          <h2 id="title-ops" class="page-title"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Operasional Harian</h2>
-          <div class="page-actions">
-            <input type="date" id="filter-ops-tgl" class="filter-input" onchange="renderOpsTable()" aria-label="Filter tanggal operasional">
-            <button class="btn-primary" onclick="addOpsBtn()"><i class="fas fa-plus" aria-hidden="true"></i> Input Operasional</button>
-            <button class="btn-export" onclick="exportToExcel('table-ops', 'OperasionalHarian')"><i class="fas fa-file-excel" aria-hidden="true"></i> Excel</button>
-            <button class="btn-export btn-pdf" onclick="exportToPDF('table-ops', 'Operasional Harian')"><i class="fas fa-file-pdf" aria-hidden="true"></i> PDF</button>
-          </div>
+    <!-- ===== OPERASIONAL HARIAN ===== -->
+    <section class="page" id="page-input-ops" aria-labelledby="title-ops">
+      <div class="page-header">
+        <div>
+          <h2 id="title-ops" class="page-title"><i class="fas fa-clipboard-list"></i> Operasional Harian</h2>
         </div>
-        <div class="table-wrapper">
-          <table id="table-ops" aria-label="Tabel operasional harian">
-            <thead><tr><th>#</th><th>Armada</th><th>Driver</th><th>Pramudi</th><th>KM Awal</th><th>KM Akhir</th><th>KM Efektif</th><th>Liter BBM</th><th>Rasio</th><th>Aksi</th></tr></thead>
-            <tbody id="table-ops-body"></tbody>
-          </table>
+        <div class="page-actions">
+          <input type="date" id="filter-ops-tgl" class="filter-input" onchange="renderOpsTable()">
+          <button class="btn-primary" onclick="addOpsBtn()"><i class="fas fa-plus"></i> Input Operasional</button>
+          <button class="btn-export" onclick="exportToExcel('table-ops','OperasionalHarian')"><i class="fas fa-file-excel"></i> Excel</button>
+          <button class="btn-export btn-pdf" onclick="exportToPDF('table-ops','Operasional Harian')"><i class="fas fa-file-pdf"></i> PDF</button>
         </div>
-      </section>
+      </div>
+      <div class="table-wrapper">
+        <table id="table-ops" aria-label="Tabel operasional harian">
+          <thead><tr><th>#</th><th>Armada</th><th>Driver</th><th>Pramudi</th><th>KM Awal</th><th>KM Akhir</th><th>KM Efektif</th><th>Liter BBM</th><th>Rasio</th><th>Aksi</th></tr></thead>
+          <tbody id="table-ops-body"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <!-- ======================================================
-           PAGE: MANAJEMEN AKUN
-      ====================================================== -->
-      <section class="page" id="page-manajemen-akun" aria-labelledby="title-akun">
-        <div class="page-header">
-          <h2 id="title-akun" class="page-title"><i class="fas fa-users-cog" aria-hidden="true"></i> Manajemen Akun</h2>
-          <div class="page-actions">
-            <button class="btn-primary" onclick="addAkunBtn()"><i class="fas fa-user-plus" aria-hidden="true"></i> Tambah Akun</button>
-          </div>
+    <!-- ===== MANAJEMEN AKUN ===== -->
+    <section class="page" id="page-manajemen-akun" aria-labelledby="title-akun">
+      <div class="page-header">
+        <div>
+          <h2 id="title-akun" class="page-title"><i class="fas fa-users-cog"></i> Manajemen Akun</h2>
         </div>
-        <div class="table-wrapper">
-          <table id="table-akun" aria-label="Tabel manajemen akun">
-            <thead><tr><th>#</th><th>Nama</th><th>Username</th><th>Role</th><th>Hak Akses</th><th>Aksi</th></tr></thead>
-            <tbody id="table-akun-body"></tbody>
-          </table>
+        <div class="page-actions">
+          <button class="btn-primary" onclick="addAkunBtn()"><i class="fas fa-user-plus"></i> Tambah Akun</button>
         </div>
-      </section>
+      </div>
+      <div class="table-wrapper">
+        <table id="table-akun" aria-label="Tabel manajemen akun">
+          <thead><tr><th>#</th><th>Nama</th><th>Username</th><th>Role</th><th>Hak Akses</th><th>Aksi</th></tr></thead>
+          <tbody id="table-akun-body"></tbody>
+        </table>
+      </div>
+    </section>
 
-<div class="page" id="page-lap-bbm-waktu">
+    <!-- ===== LAP WAKTU BBM ===== -->
+    <div class="page" id="page-lap-bbm-waktu">
       <div class="section-header">
         <div class="section-icon">⏰</div>
         <div><h2>Laporan Waktu Pengisian BBM</h2><p>Analisis waktu pengisian BBM vs jam operasional</p></div>
@@ -396,7 +343,7 @@
           <div class="form-group"><label>Waktu Akhir Operasional</label><input type="time" id="lw-jam-akhir" value="22:00"></div>
           <div class="form-group"><label>SPBU</label><select id="lw-spbu"><option value="">Semua SPBU</option></select></div>
         </div>
-        <div style="margin-top:14px;display:flex;gap:10px;">
+        <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="generateLapWaktu()"><i class="fas fa-search"></i> Tampilkan</button>
           <button class="btn btn-outline" onclick="exportPDF('lap-waktu')"><i class="fas fa-file-pdf"></i> Export PDF</button>
           <button class="btn btn-outline" onclick="exportExcelReport('lap-waktu')"><i class="fas fa-file-excel"></i> Export Excel</button>
@@ -418,7 +365,7 @@
           <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="lb-tgl-akhir"></div>
           <div class="form-group"><label>No. Lambung</label><select id="lb-lamb"><option value="">Semua Lambung</option></select></div>
         </div>
-        <div style="margin-top:14px;display:flex;gap:10px;">
+        <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="generateLapBBM()"><i class="fas fa-search"></i> Tampilkan</button>
           <button class="btn btn-outline" onclick="exportPDF('lap-bbm')"><i class="fas fa-file-pdf"></i> Export PDF</button>
           <button class="btn btn-outline" onclick="exportExcelReport('lap-bbm')"><i class="fas fa-file-excel"></i> Export Excel</button>
@@ -440,7 +387,7 @@
           <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="lo-tgl-akhir"></div>
           <div class="form-group"><label>No. Lambung</label><select id="lo-lamb"><option value="">Semua Lambung</option></select></div>
         </div>
-        <div style="margin-top:14px;display:flex;gap:10px;">
+        <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="generateLapOps()"><i class="fas fa-search"></i> Tampilkan</button>
           <button class="btn btn-outline" onclick="exportPDF('lap-ops')"><i class="fas fa-file-pdf"></i> Export PDF</button>
           <button class="btn btn-outline" onclick="exportExcelReport('lap-ops')"><i class="fas fa-file-excel"></i> Export Excel</button>
@@ -449,10 +396,7 @@
       <div id="result-lap-ops"></div>
     </div>
 
-
-    <!-- ══════════════════════════════════════════════ -->
-    <!-- LAPORAN GABUNGAN                              -->
-    <!-- ══════════════════════════════════════════════ -->
+    <!-- ===== LAP GABUNGAN ===== -->
     <div class="page" id="page-lap-gabungan">
       <div class="section-header">
         <div class="section-icon">📊</div>
@@ -465,16 +409,14 @@
           <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="lg-tgl-akhir"></div>
           <div class="form-group"><label>No. Lambung</label><select id="lg-lamb"><option value="">Semua Lambung</option></select></div>
         </div>
-        <div style="margin-top:14px;">
+        <div style="margin-top:1rem;">
           <button class="btn btn-primary" onclick="generateLapGabungan()"><i class="fas fa-search"></i> Tampilkan</button>
         </div>
       </div>
       <div id="result-lap-gabungan"></div>
     </div>
 
-    <!-- ══════════════════════════════════════════════ -->
-    <!-- LAPORAN HARIAN                                -->
-    <!-- ══════════════════════════════════════════════ -->
+    <!-- ===== LAP HARIAN ===== -->
     <div class="page" id="page-lap-harian">
       <div class="section-header">
         <div class="section-icon">📅</div>
@@ -486,16 +428,14 @@
           <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="lh-tgl-mulai"></div>
           <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="lh-tgl-akhir"></div>
         </div>
-        <div style="margin-top:14px;">
+        <div style="margin-top:1rem;">
           <button class="btn btn-primary" onclick="generateLapHarian()"><i class="fas fa-search"></i> Tampilkan</button>
         </div>
       </div>
       <div id="result-lap-harian"></div>
     </div>
 
-    <!-- ══════════════════════════════════════════════ -->
-    <!-- ANALITIK EFISIENSI                            -->
-    <!-- ══════════════════════════════════════════════ -->
+    <!-- ===== LAP EFISIENSI ===== -->
     <div class="page" id="page-lap-efisiensi">
       <div class="section-header">
         <div class="section-icon">⚡</div>
@@ -507,240 +447,163 @@
           <div class="form-group"><label>Tanggal Mulai</label><input type="date" id="le-tgl-mulai"></div>
           <div class="form-group"><label>Tanggal Akhir</label><input type="date" id="le-tgl-akhir"></div>
         </div>
-        <div style="margin-top:14px;">
+        <div style="margin-top:1rem;">
           <button class="btn btn-primary" onclick="generateLapEfisiensi()"><i class="fas fa-search"></i> Tampilkan</button>
         </div>
       </div>
       <div id="result-lap-efisiensi"></div>
     </div>
 
-        </main><!-- /#main-content -->
-  </div><!-- /#app-screen -->
+  </main>
+</div>
 
-  <!-- ============================================================
-       MODALS
-  ============================================================ -->
+<!-- ========== MODALS ========== -->
 
-  <!-- Modal: Armada Bus -->
-  <div class="modal-overlay" id="modal-bus" role="dialog" aria-modal="true" aria-labelledby="modal-bus-title">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 id="modal-bus-title">Tambah Armada Bus</h3>
-        <button class="modal-close" onclick="closeModal('modal-bus')" aria-label="Tutup modal"><i class="fas fa-times" aria-hidden="true"></i></button>
+<!-- Modal: Armada Bus -->
+<div class="modal-overlay" id="modal-bus" role="dialog" aria-modal="true" aria-labelledby="modal-bus-title">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-bus-title">Tambah Armada Bus</h3>
+      <button class="modal-close" onclick="closeModal('modal-bus')" aria-label="Tutup modal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label for="bus-nopol">Nomor Polisi *</label><input type="text" id="bus-nopol" placeholder="cth: AB 1234 CD"></div>
+      <div class="form-group"><label for="bus-lambung">Nomor Lambung *</label><input type="text" id="bus-lambung" placeholder="cth: TJ-001"></div>
+      <div class="form-group"><label for="bus-jenis">Jenis Bus</label>
+        <select id="bus-jenis">
+          <option value="Medium Bus">Medium Bus</option>
+          <option value="Bus Besar">Bus Besar</option>
+          <option value="Microbus">Microbus</option>
+        </select>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="bus-nopol">Nomor Polisi <span aria-hidden="true">*</span></label>
-          <input type="text" id="bus-nopol" placeholder="cth: AB 1234 CD">
-        </div>
-        <div class="form-group">
-          <label for="bus-lambung">Nomor Lambung <span aria-hidden="true">*</span></label>
-          <input type="text" id="bus-lambung" placeholder="cth: TJ-001">
-        </div>
-        <div class="form-group">
-          <label for="bus-jenis">Jenis Bus</label>
-          <select id="bus-jenis">
-            <option value="Medium Bus">Medium Bus</option>
-            <option value="Bus Besar">Bus Besar</option>
-            <option value="Microbus">Microbus</option>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-bus')">Batal</button>
+      <button class="btn-primary" onclick="saveBus()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: SPBU -->
+<div class="modal-overlay" id="modal-spbu" role="dialog" aria-modal="true" aria-labelledby="modal-spbu-title">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-spbu-title">Tambah Data SPBU</h3>
+      <button class="modal-close" onclick="closeModal('modal-spbu')" aria-label="Tutup modal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label for="spbu-nama">Nama SPBU *</label><input type="text" id="spbu-nama" placeholder="cth: SPBU Jl. Solo No. 45"></div>
+      <div class="form-group"><label for="spbu-lokasi">Lokasi / Alamat</label><input type="text" id="spbu-lokasi" placeholder="cth: Jl. Solo Km 8, Sleman"></div>
+      <div class="form-group"><label for="spbu-ket">Keterangan</label><textarea id="spbu-ket" rows="2" placeholder="Catatan tambahan (opsional)"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-spbu')">Batal</button>
+      <button class="btn-primary" onclick="saveSpbu()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Logistik BBM -->
+<div class="modal-overlay" id="modal-bbm" role="dialog" aria-modal="true" aria-labelledby="modal-bbm-title">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-bbm-title">Tambah Logistik BBM</h3>
+      <button class="modal-close" onclick="closeModal('modal-bbm')" aria-label="Tutup modal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-group"><label for="bbm-tanggal">Tanggal *</label><input type="date" id="bbm-tanggal"></div>
+        <div class="form-group"><label for="bbm-jenis">Jenis Transaksi</label>
+          <select id="bbm-jenis">
+            <option value="masuk">Masuk (Pengisian Tangki)</option>
+            <option value="keluar">Keluar (Pengisian Bus)</option>
           </select>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modal-bus')">Batal</button>
-        <button class="btn-primary" onclick="saveBus()"><i class="fas fa-save" aria-hidden="true"></i> Simpan</button>
+      <div class="form-grid-2">
+        <div class="form-group"><label for="bbm-spbu">SPBU *</label><select id="bbm-spbu"><option value="">— Pilih SPBU —</option></select></div>
+        <div class="form-group"><label for="bbm-bus">Bus (Opsional)</label><select id="bbm-bus"><option value="">— Pilih Bus —</option></select></div>
       </div>
+      <div class="form-group"><label for="bbm-liter">Volume (Liter) *</label><input type="number" id="bbm-liter" placeholder="cth: 150" min="0" step="0.01"></div>
+      <div class="form-group"><label for="bbm-ket">Keterangan</label><textarea id="bbm-ket" rows="2" placeholder="Catatan tambahan (opsional)"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-bbm')">Batal</button>
+      <button class="btn-primary" onclick="saveBBM()"><i class="fas fa-save"></i> Simpan</button>
     </div>
   </div>
+</div>
 
-  <!-- Modal: SPBU -->
-  <div class="modal-overlay" id="modal-spbu" role="dialog" aria-modal="true" aria-labelledby="modal-spbu-title">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 id="modal-spbu-title">Tambah Data SPBU</h3>
-        <button class="modal-close" onclick="closeModal('modal-spbu')" aria-label="Tutup modal"><i class="fas fa-times" aria-hidden="true"></i></button>
+<!-- Modal: Operasional Harian -->
+<div class="modal-overlay" id="modal-ops" role="dialog" aria-modal="true" aria-labelledby="modal-ops-title">
+  <div class="modal-box modal-box-lg">
+    <div class="modal-header">
+      <h3 id="modal-ops-title">Input Operasional Harian</h3>
+      <button class="modal-close" onclick="closeModal('modal-ops')" aria-label="Tutup modal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-group"><label for="ops-tanggal">Tanggal *</label><input type="date" id="ops-tanggal"></div>
+        <div class="form-group"><label for="ops-bus">Armada Bus *</label><select id="ops-bus"><option value="">— Pilih Bus —</option></select></div>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="spbu-nama">Nama SPBU <span aria-hidden="true">*</span></label>
-          <input type="text" id="spbu-nama" placeholder="cth: SPBU Jl. Solo No. 45">
-        </div>
-        <div class="form-group">
-          <label for="spbu-lokasi">Lokasi / Alamat</label>
-          <input type="text" id="spbu-lokasi" placeholder="cth: Jl. Solo Km 8, Sleman">
-        </div>
-        <div class="form-group">
-          <label for="spbu-ket">Keterangan</label>
-          <textarea id="spbu-ket" rows="2" placeholder="Catatan tambahan (opsional)"></textarea>
-        </div>
+      <div class="form-grid-2">
+        <div class="form-group"><label for="ops-driver">Driver</label><input type="text" id="ops-driver" placeholder="Nama pengemudi"></div>
+        <div class="form-group"><label for="ops-pramudi">Pramudi</label><input type="text" id="ops-pramudi" placeholder="Nama pramudi"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modal-spbu')">Batal</button>
-        <button class="btn-primary" onclick="saveSpbu()"><i class="fas fa-save" aria-hidden="true"></i> Simpan</button>
+      <div class="form-grid-2">
+        <div class="form-group"><label for="ops-kmawal">KM Awal *</label><input type="number" id="ops-kmawal" placeholder="cth: 45000" min="0"></div>
+        <div class="form-group"><label for="ops-kmakhir">KM Akhir *</label><input type="number" id="ops-kmakhir" placeholder="cth: 45250" min="0"></div>
       </div>
+      <div class="form-group"><label for="ops-liter">Pemakaian BBM (Liter) *</label><input type="number" id="ops-liter" placeholder="cth: 35.5" min="0" step="0.01"></div>
+      <div class="form-group"><label for="ops-ket">Keterangan</label><textarea id="ops-ket" rows="2" placeholder="Catatan tambahan (opsional)"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-ops')">Batal</button>
+      <button class="btn-primary" onclick="saveOps()"><i class="fas fa-save"></i> Simpan</button>
     </div>
   </div>
+</div>
 
-  <!-- Modal: Logistik BBM -->
-  <div class="modal-overlay" id="modal-bbm" role="dialog" aria-modal="true" aria-labelledby="modal-bbm-title">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 id="modal-bbm-title">Tambah Logistik BBM</h3>
-        <button class="modal-close" onclick="closeModal('modal-bbm')" aria-label="Tutup modal"><i class="fas fa-times" aria-hidden="true"></i></button>
+<!-- Modal: Akun Pengguna -->
+<div class="modal-overlay" id="modal-akun" role="dialog" aria-modal="true" aria-labelledby="modal-akun-title">
+  <div class="modal-box modal-box-lg">
+    <div class="modal-header">
+      <h3 id="modal-akun-title">Tambah Akun Pengguna</h3>
+      <button class="modal-close" onclick="closeModal('modal-akun')" aria-label="Tutup modal"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-group"><label for="akun-nama">Nama Lengkap *</label><input type="text" id="akun-nama" placeholder="cth: Budi Santoso"></div>
+        <div class="form-group"><label for="akun-username">Username *</label><input type="text" id="akun-username" placeholder="cth: budisantoso" autocomplete="off"></div>
       </div>
-      <div class="modal-body">
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="bbm-tanggal">Tanggal <span aria-hidden="true">*</span></label>
-            <input type="date" id="bbm-tanggal">
-          </div>
-          <div class="form-group">
-            <label for="bbm-jenis">Jenis Transaksi</label>
-            <select id="bbm-jenis">
-              <option value="masuk">Masuk (Pengisian Tangki)</option>
-              <option value="keluar">Keluar (Pengisian Bus)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="bbm-spbu">SPBU <span aria-hidden="true">*</span></label>
-            <select id="bbm-spbu"><option value="">-- Pilih SPBU --</option></select>
-          </div>
-          <div class="form-group">
-            <label for="bbm-bus">Bus (Opsional)</label>
-            <select id="bbm-bus"><option value="">-- Pilih Bus --</option></select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="bbm-liter">Volume (Liter) <span aria-hidden="true">*</span></label>
-          <input type="number" id="bbm-liter" placeholder="cth: 150" min="0" step="0.01">
-        </div>
-        <div class="form-group">
-          <label for="bbm-ket">Keterangan</label>
-          <textarea id="bbm-ket" rows="2" placeholder="Catatan tambahan (opsional)"></textarea>
+      <div class="form-grid-2">
+        <div class="form-group"><label for="akun-password">Password</label><input type="password" id="akun-password" placeholder="Min. 6 karakter" autocomplete="new-password"></div>
+        <div class="form-group"><label for="akun-role">Role</label>
+          <select id="akun-role" onchange="renderPermGrid()">
+            <option value="staf">Staf</option>
+            <option value="guest">Guest</option>
+            <option value="admin">Admin</option>
+          </select>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modal-bbm')">Batal</button>
-        <button class="btn-primary" onclick="saveBBM()"><i class="fas fa-save" aria-hidden="true"></i> Simpan</button>
+      <div class="form-group">
+        <label>Hak Akses per Modul</label>
+        <div id="perm-grid" class="perm-grid" role="grid" aria-label="Matriks hak akses"></div>
       </div>
     </div>
-  </div>
-
-  <!-- Modal: Operasional Harian -->
-  <div class="modal-overlay" id="modal-ops" role="dialog" aria-modal="true" aria-labelledby="modal-ops-title">
-    <div class="modal-box modal-box-lg">
-      <div class="modal-header">
-        <h3 id="modal-ops-title">Input Operasional Harian</h3>
-        <button class="modal-close" onclick="closeModal('modal-ops')" aria-label="Tutup modal"><i class="fas fa-times" aria-hidden="true"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="ops-tanggal">Tanggal <span aria-hidden="true">*</span></label>
-            <input type="date" id="ops-tanggal">
-          </div>
-          <div class="form-group">
-            <label for="ops-bus">Armada Bus <span aria-hidden="true">*</span></label>
-            <select id="ops-bus"><option value="">-- Pilih Bus --</option></select>
-          </div>
-        </div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="ops-driver">Driver</label>
-            <input type="text" id="ops-driver" placeholder="Nama pengemudi">
-          </div>
-          <div class="form-group">
-            <label for="ops-pramudi">Pramudi</label>
-            <input type="text" id="ops-pramudi" placeholder="Nama pramudi">
-          </div>
-        </div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="ops-kmawal">KM Awal <span aria-hidden="true">*</span></label>
-            <input type="number" id="ops-kmawal" placeholder="cth: 45000" min="0">
-          </div>
-          <div class="form-group">
-            <label for="ops-kmakhir">KM Akhir <span aria-hidden="true">*</span></label>
-            <input type="number" id="ops-kmakhir" placeholder="cth: 45250" min="0">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="ops-liter">Pemakaian BBM (Liter) <span aria-hidden="true">*</span></label>
-          <input type="number" id="ops-liter" placeholder="cth: 35.5" min="0" step="0.01">
-        </div>
-        <div class="form-group">
-          <label for="ops-ket">Keterangan</label>
-          <textarea id="ops-ket" rows="2" placeholder="Catatan tambahan (opsional)"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modal-ops')">Batal</button>
-        <button class="btn-primary" onclick="saveOps()"><i class="fas fa-save" aria-hidden="true"></i> Simpan</button>
-      </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-akun')">Batal</button>
+      <button class="btn-primary" onclick="saveAkun()"><i class="fas fa-save"></i> Simpan</button>
     </div>
   </div>
+</div>
 
-  <!-- Modal: Akun Pengguna -->
-  <div class="modal-overlay" id="modal-akun" role="dialog" aria-modal="true" aria-labelledby="modal-akun-title">
-    <div class="modal-box modal-box-lg">
-      <div class="modal-header">
-        <h3 id="modal-akun-title">Tambah Akun Pengguna</h3>
-        <button class="modal-close" onclick="closeModal('modal-akun')" aria-label="Tutup modal"><i class="fas fa-times" aria-hidden="true"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="akun-nama">Nama Lengkap <span aria-hidden="true">*</span></label>
-            <input type="text" id="akun-nama" placeholder="cth: Budi Santoso">
-          </div>
-          <div class="form-group">
-            <label for="akun-username">Username <span aria-hidden="true">*</span></label>
-            <input type="text" id="akun-username" placeholder="cth: budisantoso" autocomplete="off">
-          </div>
-        </div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="akun-password">Password</label>
-            <input type="password" id="akun-password" placeholder="Min. 6 karakter" autocomplete="new-password">
-          </div>
-          <div class="form-group">
-            <label for="akun-role">Role</label>
-            <select id="akun-role" onchange="renderPermGrid()">
-              <option value="staf">Staf</option>
-              <option value="guest">Guest</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Hak Akses per Modul</label>
-          <div id="perm-grid" class="perm-grid" role="grid" aria-label="Matriks hak akses"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modal-akun')">Batal</button>
-        <button class="btn-primary" onclick="saveAkun()"><i class="fas fa-save" aria-hidden="true"></i> Simpan</button>
-      </div>
-    </div>
-  </div>
+<!-- Toast container -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Toast container (diisi dinamis oleh JS) -->
-  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
-
-  <!--
-    ============================================================
-    FIX #1: SCRIPTS DENGAN defer
-    - defer: script diunduh paralel, dieksekusi setelah HTML
-      selesai di-parse → tidak memblokir render.
-    - Urutan eksekusi terjaga: supabase → app.js.
-    - XLSX & jsPDF DIHAPUS dari sini — dimuat lazy via loadLib()
-      di app.js hanya saat tombol Export diklik.
-    ============================================================
-  -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
-  <script src="app.js" defer></script>
+<!-- Scripts (defer — eksekusi setelah HTML selesai di-parse) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="app.js" defer></script>
 
 </body>
 </html>
