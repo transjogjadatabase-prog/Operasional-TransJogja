@@ -382,12 +382,16 @@ async function deleteSpbuBtn(id) {
 // ============================================================
 function renderBbmTable() {
   var sSel = document.getElementById('bbm-spbu');
-  sSel.innerHTML = '<option value="">-- Pilih SPBU --</option>';
-  DB.spbu.forEach(function(s) { sSel.innerHTML += '<option value="' + s.nama + '">' + s.nama + '</option>'; });
+  if (sSel) {
+    sSel.innerHTML = '<option value="">-- Pilih SPBU --</option>';
+    DB.spbu.forEach(function(s) { sSel.innerHTML += '<option value="' + s.nama + '">' + s.nama + '</option>'; });
+  }
 
   var bSel = document.getElementById('bbm-bus');
-  bSel.innerHTML = '<option value="">-- Pilih Bus (Opsional) --</option>';
-  DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.lambung + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
+  if (bSel) {
+    bSel.innerHTML = '<option value="">-- Pilih Bus (Opsional) --</option>';
+    DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.lambung + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
+  }
 
   var tbody = document.getElementById('table-bbm-body');
   tbody.innerHTML = '';
@@ -395,7 +399,7 @@ function renderBbmTable() {
   var fSpbu = document.getElementById('filter-bbm-spbu').value;
 
   var fSpbuEl = document.getElementById('filter-bbm-spbu');
-  if (fSpbuEl.options.length <= 1) {
+  if (fSpbuEl && fSpbuEl.options.length <= 1) {
     DB.spbu.forEach(function(s) { fSpbuEl.innerHTML += '<option value="' + s.nama + '">' + s.nama + '</option>'; });
     fSpbuEl.value = fSpbu;
   }
@@ -409,7 +413,7 @@ function renderBbmTable() {
     // spbu stored as name string directly
     var bObj = DB.bus.find(function(b) { return b.lambung === x.lambung; });
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (i+1) + '</td><td>' + x.tgl + '</td><td><span class="badge-jenis-bbm">' + (x.jalur||'-') + '</span></td><td><strong>' + (x.spbu||'-') + '</strong></td><td>' + (bObj?bObj.lambung:'-') + '</td><td class="text-right"><strong>' + x.nominal.toLocaleString('id-ID') + ' L</strong></td><td><small class="text-muted">' + (x.ket||'-') + '</small></td><td class="action-cell"><button class="action-btn edit" onclick="editBbmBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteBbmBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
+    tr.innerHTML = '<td>' + (i+1) + '</td><td>' + x.tgl + '</td><td><span class="badge-jenis-bbm">' + (x.jalur||'-') + '</span></td><td><strong>' + (x.spbu||'-') + '</strong></td><td>' + (bObj?bObj.lambung:'-') + '</td><td class="text-right"><strong>' + Number(x.nominal||0).toLocaleString('id-ID') + ' L</strong></td><td><small class="text-muted">' + (x.ket||'-') + '</small></td><td class="action-cell"><button class="action-btn edit" onclick="editBbmBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteBbmBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
     tbody.appendChild(tr);
   });
 }
@@ -478,8 +482,10 @@ async function deleteBbmBtn(id) {
 // ============================================================
 function renderOpsTable() {
   var bSel = document.getElementById('ops-bus');
-  bSel.innerHTML = '<option value="">-- Pilih Bus --</option>';
-  DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.lambung + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
+  if (bSel) {
+    bSel.innerHTML = '<option value="">-- Pilih Bus --</option>';
+    DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.lambung + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
+  }
 
   var tbody = document.getElementById('table-ops-body');
   tbody.innerHTML = '';
@@ -489,8 +495,8 @@ function renderOpsTable() {
 
   filtered.forEach(function(x, i) {
     var bObj = DB.bus.find(function(b) { return b.lambung === x.lambung; });
-    var km_efektif = (x.km_akhir_pool||0) - (x.km_awal_pool||0);
-    var rasio      = x.bbm_rp > 0 ? (km_efektif / (x.bbm_rp/6800)).toFixed(2) : '-';
+    var km_efektif = Number(x.km_akhir_pool||0) - Number(x.km_awal_pool||0);
+    var rasio      = Number(x.bbm_rp) > 0 ? (km_efektif / (Number(x.bbm_rp)/6800)).toFixed(2) : '-';
     var tr = document.createElement('tr');
     tr.innerHTML = '<td>' + (i+1) + '</td><td><strong>' + (bObj?bObj.lambung:'Unknown') + '</strong><br><small class="text-muted">' + (bObj?bObj.nopol:'') + '</small></td><td>' + ('-') + '</td><td>' + (x.ket||'-') + '</td><td class="text-right">' + ( x.km_awal_pool||0).toLocaleString('id-ID') + '</td><td class="text-right">' + (x.km_akhir_pool||0).toLocaleString('id-ID') + '</td><td class="text-right font-medium">' + km_efektif.toLocaleString('id-ID') + ' KM</td><td class="text-right font-medium text-success">' + (x.bbm_rp ? (x.bbm_rp/6800).toFixed(1) : '-') + ' L</td><td class="text-center"><span class="badge-km-liter">' + rasio + ' km/L</span></td><td class="action-cell"><button class="action-btn edit" onclick="editOpsBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteOpsBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
     tbody.appendChild(tr);
