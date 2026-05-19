@@ -96,8 +96,8 @@ function markStale() {
 
 async function loadBus(force)  { return safeFetchModule('bus',  'bus',  'nopol',     force); }
 async function loadSpbu(force) { return safeFetchModule('spbu', 'spbu', 'nama', force); }
-async function loadBBM(force)  { return safeFetchModule('bbm',  'bbm',  'tanggal',   force); }
-async function loadOps(force)  { return safeFetchModule('ops',  'operasional',  'tanggal',   force); }
+async function loadBBM(force)  { return safeFetchModule('bbm',  'bbm',  'tgl',   force); }
+async function loadOps(force)  { return safeFetchModule('ops',  'operasional',  'tgl',   force); }
 
 async function loadAkun() {
   try {
@@ -592,7 +592,7 @@ async function updateDashboard() {
   var chart = document.getElementById('chart-bbm');
   if (chart) {
     var cnts = days.map(function(day) {
-      return DB.bbm.filter(function(r) { return String(r.tgl||r.tanggal||'').substring(0,10) === day; }).length;
+      return DB.bbm.filter(function(r) { return String(r.tgl||'').substring(0,10) === day; }).length;
     });
     var mx = Math.max.apply(null, cnts.concat([1]));
     if (cnts.some(function(c){ return c > 0; })) {
