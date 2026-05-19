@@ -100,7 +100,7 @@ async function loadOps(force)  { return safeFetchModule('ops',  'tj_ops',  'tang
 
 async function loadAkun() {
   try {
-    let { data, error } = await db.from('tj_akun').select('*').order('username', { ascending: true });
+    let { data, error } = await db.from('akun').select('*').order('username', { ascending: true });
     if (error) throw error;
     DB.akun = data || [];
     return DB.akun;
@@ -122,7 +122,7 @@ async function handleLogin(e) {
   errEl.textContent = '';
   if (!u || !p) { errEl.textContent = 'Username dan password wajib diisi!'; return; }
   try {
-    let { data, error } = await db.from('tj_akun').select('*').eq('username', u.toLowerCase()).single();
+    let { data, error } = await db.from('akun').select('*').eq('username', u.toLowerCase()).single();
     if (error || !data) { errEl.textContent = 'Username tidak ditemukan!'; return; }
     if (data.password !== p) { errEl.textContent = 'Password salah!'; return; }
     currentUser = data;
@@ -751,17 +751,17 @@ async function saveAkun() {
   if (pass) payload.password = pass;
   try {
     if (editIdx.akun < 0) {
-      let { data: cek } = await db.from('tj_akun').select('id').eq('username', username).maybeSingle();
+      let { data: cek } = await db.from('akun').select('id').eq('username', username).maybeSingle();
       if (cek) { toast('Username sudah terpakai pengguna lain!', 'danger'); return; }
-      let { error } = await db.from('tj_akun').insert([payload]); if (error) throw error;
+      let { error } = await db.from('akun').insert([payload]); if (error) throw error;
       toast('Akun baru berhasil didaftarkan.');
     } else {
-      let { error } = await db.from('tj_akun').update(payload).eq('id', DB.akun[editIdx.akun].id); if (error) throw error;
+      let { error } = await db.from('akun').update(payload).eq('id', DB.akun[editIdx.akun].id); if (error) throw error;
       toast('Profil dan Hak Akses Akun diperbarui.');
     }
     closeModal('modal-akun'); await loadAkun(); renderAkunTable();
     if (currentUser && currentUser.username === username) {
-      let { data: freshUser } = await db.from('tj_akun').select('*').eq('username', username).single();
+      let { data: freshUser } = await db.from('akun').select('*').eq('username', username).single();
       currentUser = freshUser;
       sessionStorage.setItem('tjUser', JSON.stringify(freshUser));
       applyMenuVisibility();
@@ -772,7 +772,7 @@ async function saveAkun() {
 async function deleteAkunBtn(id) {
   if (!confirm('Hapus akun pengguna ini secara permanen dari sistem?')) return;
   try {
-    let { error } = await db.from('tj_akun').delete().eq('id', id); if (error) throw error;
+    let { error } = await db.from('akun').delete().eq('id', id); if (error) throw error;
     toast('Akun berhasil dihapus dari sistem.'); await loadAkun(); renderAkunTable();
   } catch (err) { toast('Gagal menghapus akun: ' + err.message, 'danger'); }
 }
