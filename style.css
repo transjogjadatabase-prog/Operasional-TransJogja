@@ -986,3 +986,179 @@ code {
 strong { font-weight: 600; }
 
 small { font-size: .8em; }
+
+
+/* ============================================================
+   LAPORAN COMPONENTS — compatibility layer
+   (Komponen laporan dari Mode Komplit, variabel dari Mode Efisien)
+   ============================================================ */
+
+/* Alias vars: Mode Komplit uses --green-pale/--green-main/--green-dark;
+   Mode Efisien uses --color-primary etc. Bridge them here. */
+:root {
+  --green-pale:    var(--color-primary-pale, #e8f5e9);
+  --green-main:    var(--color-primary, #1a5c27);
+  --green-dark:    var(--color-primary-dark, #0d3d18);
+  --green-light:   var(--color-primary-light, #4caf50);
+  --gray-400:      #9ca3af;
+}
+
+/* Filter card — panel filter di halaman laporan */
+.filter-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+.filter-card h4 {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: .75rem;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: .6rem;
+}
+
+/* Section header — heading di setiap halaman laporan */
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.section-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.section-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 .2rem;
+}
+.section-header p {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Report summary cards */
+.report-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.sum-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: .9rem 1rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.sum-card .val {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.1;
+  margin-bottom: .2rem;
+}
+.sum-card .lbl {
+  font-size: .72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: .4rem;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 1rem;
+  padding: 0 .25rem;
+}
+.tabs .tab {
+  background: none;
+  border: none;
+  padding: .5rem .9rem;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color var(--transition), border-color var(--transition);
+}
+.tabs .tab:hover { color: var(--color-primary); }
+.tabs .tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+/* Freeze column (sticky leftmost col in laporan tables) */
+.freeze-col {
+  position: sticky !important;
+  left: 0;
+  background: var(--bg-card);
+  z-index: 2;
+  box-shadow: 2px 0 4px rgba(0,0,0,.06);
+}
+
+/* Table outer — scrollable container */
+.table-outer {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+}
+
+/* Dashboard bar chart */
+.bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 28px;
+}
+.bar-val  { font-size: .68rem; font-weight: 600; color: var(--text-primary); }
+.bar-label { font-size: .65rem; color: var(--text-muted); }
+.bar {
+  width: 100%;
+  background: var(--color-primary);
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+  transition: height .3s;
+}
+
+/* Activity log dot icon */
+.activity-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   RESPONSIVE — tambahan untuk laporan
+   ============================================================ */
+@media (max-width: 900px) {
+  .filter-grid { grid-template-columns: 1fr 1fr; }
+  .report-summary { grid-template-columns: 1fr 1fr; }
+  .section-header { flex-direction: row; }
+}
+@media (max-width: 480px) {
+  .filter-grid { grid-template-columns: 1fr; }
+  .report-summary { grid-template-columns: 1fr 1fr; }
+  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+}
