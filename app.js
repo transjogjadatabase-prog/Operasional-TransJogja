@@ -261,7 +261,7 @@ function toast(msg, type) {
 
 function setDateNow() {
   var now = new Date().toISOString().split('T')[0];
-  ['bbm-tanggal', 'ops-tanggal', 'filter-bbm-tgl', 'filter-ops-tgl'].forEach(function(id) {
+  ['bbm-tanggal', 'ops-tanggal'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = now;
   });
 }
