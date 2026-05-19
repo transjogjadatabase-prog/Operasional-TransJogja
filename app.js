@@ -196,6 +196,13 @@ async function switchPage(pageId) {
     await loadAkun();
     renderAkunTable();
   }
+  // Laporan pages — load data dulu jika belum
+  if (pageId === 'lap-bbm-waktu') { await loadBBM(); await loadSpbu(); populateSpbuFilter(); }
+  if (pageId === 'lap-bbm')       { await loadBBM(); await loadBus(); populateLambFilter('lb-lamb'); }
+  if (pageId === 'lap-ops')       { await loadOps(); await loadBus(); populateLambFilter('lo-lamb'); }
+  if (pageId === 'lap-gabungan')  { await loadBBM(); await loadOps(); await loadBus(); populateLapGabFilter(); }
+  if (pageId === 'lap-harian')    { await loadBBM(); await loadOps(); }
+  if (pageId === 'lap-efisiensi') { await loadBBM(); await loadOps(); }
 }
 
 function toggleSidebar() { sidebarOpen = !sidebarOpen; applySidebarState(); }
@@ -785,6 +792,8 @@ async function refreshData() {
   if (id === 'data-spbu') await loadSpbu(true);
   if (id === 'input-bbm') await loadBBM(true);
   if (id === 'input-ops') await loadOps(true);
+  // Refresh laporan jika sedang di halaman laporan
+  if (id.startsWith('lap-')) { await loadBBM(true); await loadOps(true); }
   await updateDashboard();
   toast('Data diperbarui!');
 }
@@ -818,3 +827,755 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('app-screen').style.display   = 'none';
   }
 });
+
+// ============================================================
+// FREEZE KOLOM TABEL (helper untuk laporan)
+// ============================================================
+function applyFreeze(tableId) {
+  var tbl = tableId ? document.getElementById(tableId) : null;
+  var tables = tbl ? [tbl] : document.querySelectorAll('.table-outer table');
+  tables.forEach(function(t) {
+    // Freeze th pertama (pojok kiri atas)
+    var firstTh = t.querySelector('thead tr th:first-child');
+    if (firstTh) firstTh.classList.add('col-freeze-head');
+    // Freeze td pertama setiap baris
+    t.querySelectorAll('tbody tr').forEach(function(tr) {
+      var td = tr.querySelector('td:first-child');
+      if (td) td.classList.add('col-freeze');
+    });
+  });
+}
+
+// ============================================================
+// FETCH ALL — Supabase default limit 1000, ini ambil semua halaman
+// ============================================================
+async function fetchAll(table, orderCol, orderAsc, orderCol2, orderAsc2) {
+  var allData = [];
+  var pageSize = 1000;
+  var from = 0;
+  while (true) {
+    var q = db.from(table).select('*').order(orderCol, { ascending: orderAsc });
+    if (orderCol2) q = q.order(orderCol2, { ascending: orderAsc2 !== false });
+    q = q.range(from, from + pageSize - 1);
+    var r = await q;
+    if (r.error) return { data: null, error: r.error };
+    allData = allData.concat(r.data);
+    if (r.data.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: allData, error: null };
+}
+
+// ============================================================
+// BUS
+// ============================================================
+async function loadBus(forceRefresh) {
+  if (!forceRefresh && !DB_STALE.bus && DB.bus.length) { renderBus(); applyFreeze('tbl-bus'); populateLambDropdowns(); return; }
+  if (DB_LOADING.bus && DB_LOADING_PROMISE.bus) return DB_LOADING_PROMISE.bus;
+  DB_LOADING.bus = true;
+  setLoading('tbody-bus', 10);
+  DB_LOADING_PROMISE.bus = (async function() {
+    var r = await fetchAll('bus', 'created_at', false);
+    DB_LOADING.bus = false; DB_LOADING_PROMISE.bus = null;
+    if (r.error) { toast('Gagal memuat data bus: ' + r.error.message, true); return; }
+    DB.bus = r.data.map(function(d) { return { id:d.id, lambung:d.lambung, nopol:d.nopol, jalur:d.jalur, tipe:d.tipe, karoseri:d.karoseri, warna:d.warna, ket:d.ket, foto:d.foto_url }; });
+    DB_STALE.bus = false;
+    DB_FILTER.bus = null;
+    renderBus(); applyFreeze('tbl-bus'); populateLambDropdowns();
+  })();
+  return DB_LOADING_PROMISE.bus;
+}
+async function saveBus() {
+  var lambung = document.getElementById('bus-lambung').value.trim();
+  var nopol   = document.getElementById('bus-nopol').value.trim();
+  var jalur   = document.getElementById('bus-jalur').value.trim();
+  if (!lambung || !nopol || !jalur) return toast('Lambung, No Polisi, dan Jalur wajib diisi!', true);
+  var foto_url = editIdx.bus >= 0 ? DB.bus[editIdx.bus].foto : '';
+  var fotoFile = document.getElementById('bus-foto-input').files[0];
+  if (fotoFile) {
+    var ext = fotoFile.name.split('.').pop();
+    var path = 'bus/' + lambung + '_' + Date.now() + '.' + ext;
+    var up = await db.storage.from('foto-bus').upload(path, fotoFile, { upsert: true });
+    if (up.error) return toast('Gagal upload foto: ' + up.error.message, true);
+    foto_url = db.storage.from('foto-bus').getPublicUrl(path).data.publicUrl;
+  }
+  var row = { lambung:lambung, nopol:nopol, jalur:jalur, tipe:document.getElementById('bus-tipe').value, karoseri:document.getElementById('bus-karoseri').value, warna:document.getElementById('bus-warna').value, ket:document.getElementById('bus-ket').value, foto_url:foto_url };
+  var res;
+  if (editIdx.bus >= 0) { res = await db.from('bus').update(row).eq('id', DB.bus[editIdx.bus].id); if (!res.error) toast('Data bus diperbarui!'); }
+  else { res = await db.from('bus').insert(row); if (!res.error) toast('Data bus disimpan!'); }
+  if (res.error) return toast('Error: ' + res.error.message, true);
+  markStale('bus'); closeModal('modal-bus'); loadBus(true); updateDashboard();
+}
+// ============================================================
+// MULTI DELETE
+// ============================================================
+var selectedIds = { bus:[], spbu:[], bbm:[], ops:[] };
+
+
+// ============================================================
+// LAPORAN & EXPORT — dari Mode Komplit
+// ============================================================
+function filterTable(tableId, keyword) {
+  var kw = keyword.trim().toLowerCase();
+
+  var keyMap = { 'tbl-bus':'bus', 'tbl-spbu':'spbu', 'tbl-bbm':'bbm', 'tbl-ops':'ops', 'tbl-akun':'akun' };
+  var renderMap = {
+    'tbl-bus':  function(){ renderBus(); },
+    'tbl-spbu': function(){ renderSpbu(); },
+    'tbl-bbm':  function(){ renderBBM(); },
+    'tbl-ops':  function(){ renderOps(); },
+    'tbl-akun': function(){ renderAkun(); }
+  };
+
+  var key = keyMap[tableId];
+  if (!key || !renderMap[tableId]) return;
+
+  if (!kw) {
+    // Kosong: hapus filter, pakai DB asli
+    DB_FILTER[key] = null;
+  } else {
+    // Simpan hasil filter ke DB_FILTER, JANGAN timpa DB[key]
+    DB_FILTER[key] = DB[key].filter(function(r) {
+      return Object.values(r).some(function(v) {
+        return v !== null && v !== undefined && String(v).toLowerCase().includes(kw);
+      });
+    });
+  }
+
+  renderMap[tableId]();
+  applyFreeze(tableId);
+}
+function populateSpbuFilter() {
+  var sel=document.getElementById('lw-spbu');if(!sel)return;
+  sel.innerHTML='<option value="">Semua SPBU</option>'+DB.spbu.map(function(s){return'<option value="'+s.nama+'">'+s.nama+'</option>';}).join('');
+}
+function populateLambFilter(selId) {
+  var sel=document.getElementById(selId);if(!sel)return;
+  sel.innerHTML='<option value="">Semua Lambung</option>'+DB.bus.map(function(b){return'<option value="'+b.lambung+'">'+b.lambung+'</option>';}).join('');
+}
+function generateLapWaktu() {
+  var tglMulai=document.getElementById('lw-tgl-mulai').value,tglAkhir=document.getElementById('lw-tgl-akhir').value;
+  var jamMulai=document.getElementById('lw-jam-mulai').value||'05:00',jamAkhir=document.getElementById('lw-jam-akhir').value||'22:00';
+  var spbuF=document.getElementById('lw-spbu').value;
+  var data=DB.bbm.slice();
+  if(tglMulai)data=data.filter(function(r){return r.tgl>=tglMulai;});if(tglAkhir)data=data.filter(function(r){return r.tgl<=tglAkhir;});
+  if(spbuF)data=data.filter(function(r){return r.spbu===spbuF;});
+  var jamOps=data.filter(function(r){return r.waktu&&r.waktu>=jamMulai&&r.waktu<=jamAkhir;});
+  var sblm=data.filter(function(r){return r.waktu&&r.waktu<jamMulai;}),atas=data.filter(function(r){return r.waktu&&r.waktu>jamAkhir;});
+  var el=document.getElementById('result-lap-waktu');
+  if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
+  el.innerHTML='<div class="report-summary"><div class="sum-card"><div class="val">'+data.length+'</div><div class="lbl">Total</div></div><div class="sum-card"><div class="val">'+jamOps.length+'</div><div class="lbl">Jam Operasional</div></div><div class="sum-card"><div class="val">'+sblm.length+'</div><div class="lbl">Sebelum</div></div><div class="sum-card"><div class="val">'+atas.length+'</div><div class="lbl">Setelah</div></div></div><div class="card"><div class="card-header"><div class="card-title">Detail Pengisian BBM</div></div><div class="tabs"><button class="tab active" onclick="showWaktuTab(this,\'tab-jam\')">Jam Operasional ('+jamOps.length+')</button><button class="tab" onclick="showWaktuTab(this,\'tab-sblm\')">Sebelum ('+sblm.length+')</button><button class="tab" onclick="showWaktuTab(this,\'tab-atas\')">Setelah ('+atas.length+')</button></div><div id="tab-jam">'+renderBBMRows(jamOps)+'</div><div id="tab-sblm" style="display:none">'+renderBBMRows(sblm)+'</div><div id="tab-atas" style="display:none">'+renderBBMRows(atas)+'</div></div>';
+}
+function showWaktuTab(btn,tabId) {
+  btn.closest('.card').querySelectorAll('.tabs .tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');
+  ['tab-jam','tab-sblm','tab-atas'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=id===tabId?'':'none';});
+}
+function renderBBMRows(rows) {
+  if(!rows.length)return'<div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div>';
+  return'<div class="table-outer"><table><thead><tr><th>Tanggal</th><th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Waktu</th><th>Nominal</th><th>SPBU</th><th>Halte</th></tr></thead><tbody>'+rows.map(function(r){return'<tr><td>'+r.tgl+'</td><td>'+r.lambung+'</td><td>'+r.jalur+'</td><td>'+r.nopol+'</td><td>'+(r.waktu||'-')+'</td><td>Rp '+Number(r.nominal).toLocaleString()+'</td><td>'+(r.spbu||'-')+'</td><td>'+(r.halte||'-')+'</td></tr>';}).join('')+'</tbody></table></div>';
+}
+function generateLapBBM() {
+  var tglM=document.getElementById('lb-tgl-mulai').value,tglA=document.getElementById('lb-tgl-akhir').value,lambF=document.getElementById('lb-lamb').value;
+  var data=DB.bbm.slice();if(tglM)data=data.filter(function(r){return String(r.tgl).substring(0,10)>=tglM;});if(tglA)data=data.filter(function(r){return String(r.tgl).substring(0,10)<=tglA;});if(lambF)data=data.filter(function(r){return String(r.lambung).trim()===lambF;});
+  var el=document.getElementById('result-lap-bbm');
+  if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
+  data=data.map(function(r){r.tgl=String(r.tgl).substring(0,10);r.lambung=String(r.lambung).trim();return r;});var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort(),dates=[...new Set(data.map(function(r){return r.tgl;}))].sort();
+  var tot=data.reduce(function(s,r){return s+Number(r.nominal);},0);
+  var html='<div class="card"><div class="card-header"><div class="card-title">Laporan BBM Harian</div></div><div class="table-outer"><table><thead><tr><th class="freeze-col">Lambung</th>'+dates.map(function(d){return'<th>'+d+'</th>';}).join('')+'<th>TOTAL</th></tr></thead><tbody>';
+  lambs.forEach(function(lamb){var rowTot=0;html+='<tr><td class="freeze-col" style="position:sticky;left:0;background:#fff;z-index:2;"><strong>'+lamb+'</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.lambung===lamb&&r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);rowTot+=s;html+='<td>'+(s?'Rp '+s.toLocaleString():'-')+'</td>';});html+='<td><strong>Rp '+rowTot.toLocaleString()+'</strong></td></tr>';});
+  html+='<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td class="freeze-col" style="position:sticky;left:0;background:var(--green-pale);z-index:2;"><strong style="color:var(--green-dark);">TOTAL</strong></td>';dates.forEach(function(d){var s=data.filter(function(r){return r.tgl===d;}).reduce(function(a,r){return a+Number(r.nominal);},0);html+='<td><strong style="color:var(--green-dark);">Rp '+s.toLocaleString()+'</strong></td>';});
+  html+='<td><strong style="color:var(--green-dark);">Rp '+tot.toLocaleString()+'</strong></td></tr></tbody></table></div></div>';
+  el.innerHTML=html;
+  setTimeout(applyFreeze,10);
+}
+function generateLapOps() {
+  var tglM=document.getElementById('lo-tgl-mulai').value,tglA=document.getElementById('lo-tgl-akhir').value,lambF=document.getElementById('lo-lamb').value;
+  var data=DB.ops.slice();if(tglM)data=data.filter(function(r){return String(r.tgl).substring(0,10)>=tglM;});if(tglA)data=data.filter(function(r){return String(r.tgl).substring(0,10)<=tglA;});if(lambF)data=data.filter(function(r){return String(r.lambung).trim()===lambF;});
+  var el=document.getElementById('result-lap-ops');
+  if(!data.length){el.innerHTML='<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data</p></div></div>';return;}
+  var lambs=[...new Set(data.map(function(r){return r.lambung;}))].sort();
+  var rows=lambs.map(function(lamb){var items=data.filter(function(r){return r.lambung===lamb;});var jalur=items[0]?items[0].jalur:'-';var totalJam=items.reduce(function(s,r){return s+(Number(r.kmTempuh)||0);},0);var totalBBM=items.reduce(function(s,r){return s+(Number(r.bbm)||0);},0);var totalRit=items.reduce(function(s,r){return s+(Number(r.rit)||0);},0);var liter=totalBBM/6800;var ratio=liter>0?(totalJam/liter).toFixed(2):'-';return{lamb:lamb,jalur:jalur,totalJam:totalJam,totalBBM:totalBBM,liter:liter.toFixed(2),ratio:ratio,totalRit:totalRit};});
+  var gBBM=rows.reduce(function(s,r){return s+r.totalBBM;},0),gRit=rows.reduce(function(s,r){return s+r.totalRit;},0);
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">Rekapitulasi Operasional</div></div><div class="report-summary"><div class="sum-card"><div class="val">'+rows.length+'</div><div class="lbl">Lambung</div></div><div class="sum-card"><div class="val">'+gRit+'</div><div class="lbl">Total Ritase</div></div><div class="sum-card"><div class="val">Rp '+gBBM.toLocaleString()+'</div><div class="lbl">Total BBM (Rp)</div></div><div class="sum-card"><div class="val">'+( gBBM/6800).toFixed(1)+' L</div><div class="lbl">Total BBM (L)</div></div></div><div class="table-outer"><table><thead><tr><th>Lambung</th><th>Jalur</th><th>Total Jam (mnt)</th><th>BBM (L)</th><th>Rasio</th><th>Total BBM (Rp)</th><th>Total Ritase</th></tr></thead><tbody>'+rows.map(function(r){return'<tr><td><strong>'+r.lamb+'</strong></td><td>'+r.jalur+'</td><td>'+r.totalJam+'</td><td>'+r.liter+'</td><td>'+r.ratio+'</td><td>Rp '+r.totalBBM.toLocaleString()+'</td><td>'+r.totalRit+'</td></tr>';}).join('')+'<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);"><td colspan="2"><strong style="color:var(--green-dark);">TOTAL</strong></td><td><strong style="color:var(--green-dark);">'+rows.reduce(function(s,r){return s+r.totalJam;},0)+'</strong></td><td><strong style="color:var(--green-dark);">'+(gBBM/6800).toFixed(2)+'</strong></td><td>-</td><td><strong style="color:var(--green-dark);">Rp '+gBBM.toLocaleString()+'</strong></td><td><strong style="color:var(--green-dark);">'+gRit+'</strong></td></tr></tbody></table></div></div></div>';
+}
+
+
+// ============================================================
+// LAPORAN GABUNGAN — BBM + Operasional per Bus per Periode
+// ============================================================
+function populateLapGabFilter() { populateLambFilter('lg-lamb'); }
+
+function generateLapGabungan() {
+  var tglM = document.getElementById('lg-tgl-mulai') ? document.getElementById('lg-tgl-mulai').value : '';
+  var tglA = document.getElementById('lg-tgl-akhir') ? document.getElementById('lg-tgl-akhir').value : '';
+  var lambF = document.getElementById('lg-lamb') ? document.getElementById('lg-lamb').value : '';
+  var el = document.getElementById('result-lap-gabungan');
+  if (!el) return;
+
+  var bbmData = DB.bbm.slice();
+  var opsData = DB.ops.slice();
+  if (tglM) { bbmData = bbmData.filter(function(r){ return r.tgl >= tglM; }); opsData = opsData.filter(function(r){ return r.tgl >= tglM; }); }
+  if (tglA) { bbmData = bbmData.filter(function(r){ return r.tgl <= tglA; }); opsData = opsData.filter(function(r){ return r.tgl <= tglA; }); }
+  if (lambF) { bbmData = bbmData.filter(function(r){ return String(r.lambung).trim() === lambF; }); opsData = opsData.filter(function(r){ return String(r.lambung).trim() === lambF; }); }
+
+  if (!bbmData.length && !opsData.length) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data untuk periode ini</p></div></div>'; return;
+  }
+
+  // Kumpulkan semua lambung yang muncul di kedua tabel
+  var lambSet = {};
+  bbmData.forEach(function(r){ lambSet[String(r.lambung).trim()] = true; });
+  opsData.forEach(function(r){ lambSet[String(r.lambung).trim()] = true; });
+  var lambs = Object.keys(lambSet).sort(function(a,b){ return Number(a)-Number(b) || a.localeCompare(b); });
+
+  var rows = lambs.map(function(lamb) {
+    var bRows = bbmData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var oRows = opsData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var totalBBMRp = bRows.reduce(function(s,r){ return s + Number(r.nominal||0); }, 0);
+    var totalLiter = totalBBMRp / 6800;
+    var totalKm    = oRows.reduce(function(s,r){ return s + Number(r.kmTempuh||0); }, 0);
+    var totalRit   = oRows.reduce(function(s,r){ return s + Number(r.rit||0); }, 0);
+    var rasio      = totalLiter > 0 ? (totalKm / totalLiter).toFixed(2) : '-';
+    var jalur      = (bRows[0] || oRows[0] || {}).jalur || '-';
+    var nopol      = (bRows[0] || oRows[0] || {}).nopol || '-';
+    // Status selesai = ada data di keduanya
+    var status = (bRows.length > 0 && oRows.length > 0) ? 'selesai' : bRows.length > 0 ? 'no-ops' : 'no-bbm';
+    var hariOps = [...new Set(oRows.map(function(r){ return r.tgl; }))].length;
+    return { lamb, jalur, nopol, totalBBMRp, totalLiter: totalLiter.toFixed(2), totalKm, totalRit, rasio, status, hariOps, bCount: bRows.length, oCount: oRows.length };
+  });
+
+  // Summary cards
+  var totalBus    = rows.length;
+  var busSelesai  = rows.filter(function(r){ return r.status === 'selesai'; }).length;
+  var grandBBM    = rows.reduce(function(s,r){ return s + r.totalBBMRp; }, 0);
+  var grandKm     = rows.reduce(function(s,r){ return s + r.totalKm; }, 0);
+  var grandRit    = rows.reduce(function(s,r){ return s + r.totalRit; }, 0);
+  var grandLiter  = grandBBM / 6800;
+  var grandRasio  = grandLiter > 0 ? (grandKm / grandLiter).toFixed(2) : '-';
+
+  var statusBadge = function(s) {
+    if (s === 'selesai') return '<span style="background:#d4edda;color:#155724;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;">✅ Lengkap</span>';
+    if (s === 'no-ops')  return '<span style="background:#fff3cd;color:#856404;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;">⚠ Belum ada Ops</span>';
+    return '<span style="background:#bee3f8;color:#2b6cb0;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;">⚠ Belum ada BBM</span>';
+  };
+
+  var rasioColor = function(r) {
+    if (r === '-') return '';
+    var v = Number(r);
+    if (v >= 5)   return 'color:#155724;font-weight:700;';
+    if (v >= 3.5) return 'color:#856404;font-weight:700;';
+    return 'color:#721c24;font-weight:700;';
+  };
+
+  var html = '<div class="report-summary" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;">'
+    + '<div class="sum-card"><div class="val">'+totalBus+'</div><div class="lbl">Total Bus</div></div>'
+    + '<div class="sum-card" style="background:#d4edda;"><div class="val" style="color:#155724;">'+busSelesai+'</div><div class="lbl">Data Lengkap</div></div>'
+    + '<div class="sum-card"><div class="val">Rp '+grandBBM.toLocaleString('id-ID')+'</div><div class="lbl">Total BBM</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandLiter.toFixed(1)+' L</div><div class="lbl">Total Liter</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandKm.toLocaleString('id-ID')+' km</div><div class="lbl">Total KM</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandRit+'</div><div class="lbl">Total Rit</div></div>'
+    + '<div class="sum-card"><div class="val">'+grandRasio+' km/L</div><div class="lbl">Rasio Rata-rata</div></div>'
+    + '</div>';
+
+  html += '<div class="card"><div class="card-header"><div class="card-title">Detail Per Bus</div>'
+    + '<button class="btn btn-sm btn-outline" onclick="exportLapGabExcel()" style="margin-left:auto;"><i class="fas fa-file-excel"></i> Export Excel</button></div>'
+    + '<div class="table-outer"><table><thead><tr>'
+    + '<th>Lambung</th><th>Jalur</th><th>No Polisi</th><th>Hari Ops</th>'
+    + '<th>BBM (Rp)</th><th>BBM (L)</th><th>KM Tempuh</th><th>Rit</th>'
+    + '<th>Rasio km/L</th><th>Status</th>'
+    + '</tr></thead><tbody>';
+
+  rows.forEach(function(r) {
+    html += '<tr>'
+      + '<td><strong>'+r.lamb+'</strong></td>'
+      + '<td>'+r.jalur+'</td>'
+      + '<td>'+r.nopol+'</td>'
+      + '<td style="text-align:center;">'+r.hariOps+'</td>'
+      + '<td>Rp '+r.totalBBMRp.toLocaleString('id-ID')+'</td>'
+      + '<td>'+r.totalLiter+' L</td>'
+      + '<td>'+r.totalKm.toLocaleString('id-ID')+' km</td>'
+      + '<td style="text-align:center;">'+r.totalRit+'</td>'
+      + '<td style="text-align:center;'+rasioColor(r.rasio)+'">'+r.rasio+'</td>'
+      + '<td>'+statusBadge(r.status)+'</td>'
+      + '</tr>';
+  });
+
+  html += '<tr style="background:var(--green-pale);border-top:2px solid var(--green-main);">'
+    + '<td colspan="3"><strong style="color:var(--green-dark);">TOTAL</strong></td>'
+    + '<td></td>'
+    + '<td><strong style="color:var(--green-dark);">Rp '+grandBBM.toLocaleString('id-ID')+'</strong></td>'
+    + '<td><strong style="color:var(--green-dark);">'+grandLiter.toFixed(2)+' L</strong></td>'
+    + '<td><strong style="color:var(--green-dark);">'+grandKm.toLocaleString('id-ID')+' km</strong></td>'
+    + '<td style="text-align:center;"><strong style="color:var(--green-dark);">'+grandRit+'</strong></td>'
+    + '<td style="text-align:center;"><strong style="color:var(--green-dark);">'+grandRasio+'</strong></td>'
+    + '<td></td>'
+    + '</tr>';
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+  setTimeout(applyFreeze, 10);
+
+  // Simpan ke window untuk export
+  window._lapGabRows = rows;
+  window._lapGabGrand = { grandBBM, grandLiter, grandKm, grandRit, grandRasio };
+}
+
+function exportLapGabExcel() {
+  if (!window._lapGabRows) return toast('Generate laporan dulu!', true);
+  var hdrs = ['Lambung','Jalur','No Polisi','Hari Ops','BBM (Rp)','BBM (L)','KM Tempuh','Rit','Rasio km/L','Status'];
+  var aoa = [hdrs].concat(window._lapGabRows.map(function(r){
+    return [r.lamb, r.jalur, r.nopol, r.hariOps, r.totalBBMRp, r.totalLiter, r.totalKm, r.totalRit, r.rasio,
+      r.status === 'selesai' ? 'Lengkap' : r.status === 'no-ops' ? 'Belum ada Ops' : 'Belum ada BBM'];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = hdrs.map(function(h){ return {wch: Math.max(h.length+4,14)}; });
+  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Gabungan');
+  XLSX.writeFile(wb, 'LaporanGabungan_TransJogja.xlsx');
+  toast('Export berhasil!');
+}
+
+// ============================================================
+// LAPORAN HARIAN — Ringkasan per Tanggal
+// ============================================================
+function generateLapHarian() {
+  var tglM = document.getElementById('lh-tgl-mulai') ? document.getElementById('lh-tgl-mulai').value : '';
+  var tglA = document.getElementById('lh-tgl-akhir') ? document.getElementById('lh-tgl-akhir').value : '';
+  var el = document.getElementById('result-lap-harian');
+  if (!el) return;
+
+  var bbmData = DB.bbm.slice();
+  var opsData  = DB.ops.slice();
+  if (tglM) { bbmData = bbmData.filter(function(r){ return r.tgl >= tglM; }); opsData = opsData.filter(function(r){ return r.tgl >= tglM; }); }
+  if (tglA) { bbmData = bbmData.filter(function(r){ return r.tgl <= tglA; }); opsData = opsData.filter(function(r){ return r.tgl <= tglA; }); }
+
+  var dateSet = {};
+  bbmData.forEach(function(r){ dateSet[r.tgl] = true; });
+  opsData.forEach(function(r){ dateSet[r.tgl] = true; });
+  var dates = Object.keys(dateSet).sort().reverse(); // terbaru dulu
+
+  if (!dates.length) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><i class="fas fa-calendar-times"></i><p>Tidak ada data</p></div></div>'; return;
+  }
+
+  var dayRows = dates.map(function(tgl) {
+    var bRows = bbmData.filter(function(r){ return r.tgl === tgl; });
+    var oRows = opsData.filter(function(r){ return r.tgl === tgl; });
+    var totalBBMRp = bRows.reduce(function(s,r){ return s + Number(r.nominal||0); }, 0);
+    var totalKm    = oRows.reduce(function(s,r){ return s + Number(r.kmTempuh||0); }, 0);
+    var totalRit   = oRows.reduce(function(s,r){ return s + Number(r.rit||0); }, 0);
+    var liter      = totalBBMRp / 6800;
+    var rasio      = liter > 0 && totalKm > 0 ? (totalKm / liter).toFixed(2) : '-';
+    // Bus yg ada data BBM & ops hari itu
+    var bbmLambs = [...new Set(bRows.map(function(r){ return String(r.lambung).trim(); }))];
+    var opsLambs = [...new Set(oRows.map(function(r){ return String(r.lambung).trim(); }))];
+    var selesai  = bbmLambs.filter(function(l){ return opsLambs.includes(l); }).length;
+    var pending  = bbmLambs.filter(function(l){ return !opsLambs.includes(l); }).length
+                 + opsLambs.filter(function(l){ return !bbmLambs.includes(l); }).length;
+    return { tgl, busBBM: bbmLambs.length, busOps: opsLambs.length, selesai, pending, totalBBMRp, liter: liter.toFixed(2), totalKm, totalRit, rasio };
+  });
+
+  var html = '<div class="card"><div class="card-header"><div class="card-title">Ringkasan Harian</div>'
+    + '<button class="btn btn-sm btn-outline" onclick="exportLapHarianExcel()" style="margin-left:auto;"><i class="fas fa-file-excel"></i> Export</button></div>'
+    + '<div class="table-outer"><table><thead><tr>'
+    + '<th>Tanggal</th><th>Bus BBM</th><th>Bus Ops</th>'
+    + '<th style="color:#155724;">✅ Lengkap</th><th style="color:#856404;">⚠ Pending</th>'
+    + '<th>Total BBM (Rp)</th><th>Liter</th><th>KM Tempuh</th><th>Total Rit</th><th>Rasio km/L</th>'
+    + '</tr></thead><tbody>';
+
+  dayRows.forEach(function(r) {
+    var pendBg = r.pending > 0 ? 'background:#fffbea;' : '';
+    html += '<tr style="'+pendBg+'">'
+      + '<td><strong>'+r.tgl+'</strong></td>'
+      + '<td style="text-align:center;">'+r.busBBM+'</td>'
+      + '<td style="text-align:center;">'+r.busOps+'</td>'
+      + '<td style="text-align:center;color:#155724;font-weight:700;">'+r.selesai+'</td>'
+      + '<td style="text-align:center;color:'+(r.pending>0?'#856404':'#155724')+';font-weight:700;">'+r.pending+'</td>'
+      + '<td>Rp '+r.totalBBMRp.toLocaleString('id-ID')+'</td>'
+      + '<td>'+r.liter+' L</td>'
+      + '<td>'+r.totalKm.toLocaleString('id-ID')+' km</td>'
+      + '<td style="text-align:center;">'+r.totalRit+'</td>'
+      + '<td style="text-align:center;">'+r.rasio+'</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+  window._lapHarianRows = dayRows;
+}
+
+function exportLapHarianExcel() {
+  if (!window._lapHarianRows) return toast('Generate laporan dulu!', true);
+  var hdrs = ['Tanggal','Bus BBM','Bus Ops','Lengkap','Pending','BBM (Rp)','Liter','KM','Rit','Rasio'];
+  var aoa = [hdrs].concat(window._lapHarianRows.map(function(r){
+    return [r.tgl, r.busBBM, r.busOps, r.selesai, r.pending, r.totalBBMRp, r.liter, r.totalKm, r.totalRit, r.rasio];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = hdrs.map(function(){ return {wch: 14}; });
+  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Harian');
+  XLSX.writeFile(wb, 'LaporanHarian_TransJogja.xlsx');
+  toast('Export berhasil!');
+}
+
+// ============================================================
+// ANALITIK EFISIENSI — Ranking & Highlight per Bus
+// ============================================================
+function generateLapEfisiensi() {
+  var tglM = document.getElementById('le-tgl-mulai') ? document.getElementById('le-tgl-mulai').value : '';
+  var tglA = document.getElementById('le-tgl-akhir') ? document.getElementById('le-tgl-akhir').value : '';
+  var el = document.getElementById('result-lap-efisiensi');
+  if (!el) return;
+
+  var bbmData = DB.bbm.slice();
+  var opsData  = DB.ops.slice();
+  if (tglM) { bbmData = bbmData.filter(function(r){ return r.tgl >= tglM; }); opsData = opsData.filter(function(r){ return r.tgl >= tglM; }); }
+  if (tglA) { bbmData = bbmData.filter(function(r){ return r.tgl <= tglA; }); opsData = opsData.filter(function(r){ return r.tgl <= tglA; }); }
+
+  // Hanya bus yang punya kedua data (lengkap)
+  var lambSet = {};
+  opsData.forEach(function(r){ lambSet[String(r.lambung).trim()] = true; });
+  var lambs = Object.keys(lambSet).filter(function(l){
+    return bbmData.some(function(b){ return String(b.lambung).trim() === l; });
+  }).sort(function(a,b){ return Number(a)-Number(b) || a.localeCompare(b); });
+
+  if (!lambs.length) {
+    el.innerHTML = '<div class="card"><div class="empty-state"><i class="fas fa-chart-bar"></i><p>Belum ada data lengkap (butuh BBM + Operasional)</p></div></div>'; return;
+  }
+
+  var rows = lambs.map(function(lamb) {
+    var bRows = bbmData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var oRows = opsData.filter(function(r){ return String(r.lambung).trim() === lamb; });
+    var totalBBMRp = bRows.reduce(function(s,r){ return s+Number(r.nominal||0); }, 0);
+    var liter      = totalBBMRp / 6800;
+    var totalKm    = oRows.reduce(function(s,r){ return s+Number(r.kmTempuh||0); }, 0);
+    var totalRit   = oRows.reduce(function(s,r){ return s+Number(r.rit||0); }, 0);
+    var rasio      = liter > 0 ? Number((totalKm / liter).toFixed(2)) : 0;
+    var hariOps    = [...new Set(oRows.map(function(r){ return r.tgl; }))].length;
+    var jalur      = (oRows[0]||bRows[0]||{}).jalur || '-';
+    var kmPerHari  = hariOps > 0 ? (totalKm / hariOps).toFixed(1) : 0;
+    var ritPerHari = hariOps > 0 ? (totalRit / hariOps).toFixed(1) : 0;
+    return { lamb, jalur, rasio, totalKm, totalBBMRp, liter: liter.toFixed(2), totalRit, hariOps, kmPerHari, ritPerHari };
+  }).filter(function(r){ return r.rasio > 0; });
+
+  // Sort by rasio desc untuk ranking
+  rows.sort(function(a,b){ return b.rasio - a.rasio; });
+
+  var maxRasio = rows[0] ? rows[0].rasio : 1;
+  var avgRasio = rows.length ? (rows.reduce(function(s,r){ return s+r.rasio; },0)/rows.length).toFixed(2) : '-';
+  var top3     = rows.slice(0,3);
+  var bot3     = rows.slice(-3).reverse();
+
+  var html = '';
+
+  // Panel highlight
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">';
+
+  // Top 3
+  html += '<div class="card" style="border-left:4px solid #38a169;">'
+    + '<div class="card-header"><div class="card-title" style="color:#155724;"><i class="fas fa-trophy" style="color:#f6c90e;margin-right:6px;"></i>Efisiensi Terbaik</div></div>'
+    + top3.map(function(r, i){
+        var medals = ['🥇','🥈','🥉'];
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #e2e8f0;">'
+          + '<span style="font-size:20px;">'+medals[i]+'</span>'
+          + '<div style="flex:1;">'
+          + '<div style="font-weight:700;">Lambung '+r.lamb+' <span style="font-size:11px;color:#718096;">('+r.jalur+')</span></div>'
+          + '<div style="font-size:11px;color:#718096;">'+r.hariOps+' hari | '+r.totalKm+' km | '+r.totalRit+' rit</div>'
+          + '</div>'
+          + '<div style="font-size:18px;font-weight:800;color:#155724;">'+r.rasio+' <span style="font-size:11px;font-weight:400;">km/L</span></div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  // Bottom 3
+  html += '<div class="card" style="border-left:4px solid #e53e3e;">'
+    + '<div class="card-header"><div class="card-title" style="color:#721c24;"><i class="fas fa-exclamation-triangle" style="color:#e53e3e;margin-right:6px;"></i>Perlu Perhatian</div></div>'
+    + bot3.map(function(r, i){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #e2e8f0;">'
+          + '<span style="font-size:20px;">'+(i===0?'🔴':i===1?'🟠':'🟡')+'</span>'
+          + '<div style="flex:1;">'
+          + '<div style="font-weight:700;">Lambung '+r.lamb+' <span style="font-size:11px;color:#718096;">('+r.jalur+')</span></div>'
+          + '<div style="font-size:11px;color:#718096;">'+r.hariOps+' hari | '+r.totalKm+' km | Rp '+r.totalBBMRp.toLocaleString('id-ID')+'</div>'
+          + '</div>'
+          + '<div style="font-size:18px;font-weight:800;color:#721c24;">'+r.rasio+' <span style="font-size:11px;font-weight:400;">km/L</span></div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+
+  html += '</div>';
+
+  // Tabel lengkap dengan bar visual
+  html += '<div class="card"><div class="card-header"><div class="card-title">Ranking Semua Bus</div>'
+    + '<div style="margin-left:auto;display:flex;gap:8px;align-items:center;">'
+    + '<span style="font-size:12px;color:#718096;">Rata-rata: <strong>'+avgRasio+' km/L</strong></span>'
+    + '<button class="btn btn-sm btn-outline" onclick="exportLapEfisiensiExcel()"><i class="fas fa-file-excel"></i> Export</button>'
+    + '</div></div>'
+    + '<div class="table-outer"><table><thead><tr>'
+    + '<th>#</th><th>Lambung</th><th>Jalur</th><th>Hari</th>'
+    + '<th>KM Total</th><th>KM/Hari</th><th>BBM (L)</th><th>Rit Total</th><th>Rit/Hari</th>'
+    + '<th>Rasio km/L</th><th>Efisiensi</th>'
+    + '</tr></thead><tbody>';
+
+  rows.forEach(function(r, i) {
+    var pct = maxRasio > 0 ? (r.rasio / maxRasio * 100).toFixed(0) : 0;
+    var barColor = r.rasio >= avgRasio ? '#38a169' : r.rasio >= avgRasio * 0.75 ? '#d97706' : '#e53e3e';
+    var rank = i + 1;
+    var rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    html += '<tr>'
+      + '<td style="text-align:center;font-weight:700;">'+rankBadge+'</td>'
+      + '<td><strong>'+r.lamb+'</strong></td>'
+      + '<td>'+r.jalur+'</td>'
+      + '<td style="text-align:center;">'+r.hariOps+'</td>'
+      + '<td>'+r.totalKm.toLocaleString('id-ID')+' km</td>'
+      + '<td>'+r.kmPerHari+' km</td>'
+      + '<td>'+r.liter+' L</td>'
+      + '<td style="text-align:center;">'+r.totalRit+'</td>'
+      + '<td>'+r.ritPerHari+'</td>'
+      + '<td style="text-align:center;font-weight:800;color:'+barColor+';">'+r.rasio+'</td>'
+      + '<td style="min-width:100px;">'
+      + '<div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">'
+      + '<div style="width:'+pct+'%;background:'+barColor+';height:8px;border-radius:4px;transition:width 0.4s;"></div>'
+      + '</div>'
+      + '<span style="font-size:10px;color:#718096;">'+pct+'%</span>'
+      + '</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+  window._lapEfRows = rows;
+}
+
+function exportLapEfisiensiExcel() {
+  if (!window._lapEfRows) return toast('Generate laporan dulu!', true);
+  var hdrs = ['Rank','Lambung','Jalur','Hari','KM Total','KM/Hari','BBM (L)','Rit Total','Rit/Hari','Rasio km/L'];
+  var aoa = [hdrs].concat(window._lapEfRows.map(function(r,i){
+    return [i+1, r.lamb, r.jalur, r.hariOps, r.totalKm, r.kmPerHari, r.liter, r.totalRit, r.ritPerHari, r.rasio];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = hdrs.map(function(){ return {wch: 14}; });
+  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Efisiensi');
+  XLSX.writeFile(wb, 'LaporanEfisiensi_TransJogja.xlsx');
+  toast('Export berhasil!');
+}
+
+// ============================================================
+// IMPORT / EXPORT / TEMPLATE
+// ============================================================
+function downloadTemplate(type) {
+  var headers=[],sampleRows=[],filename='';
+  if(type==='bus'){headers=['Lambung','No Polisi','Jalur','Tipe Bus','Karoseri','Warna Bus','Keterangan'];sampleRows=[['AB-001','AB 1234 CD','Koridor 1','Besar','Laksana','Hijau',''],['AB-002','AB 5678 EF','Koridor 2','Sedang','Adiputro','Putih','']];filename='Template_Bus.xlsx';}
+  else if(type==='spbu'){headers=['Nama SPBU','ID SPBU','Alamat','No Hp','Status'];sampleRows=[['SPBU Jl. Magelang','34-151-01','Jl. Magelang No.10','081234567890','Aktif']];filename='Template_SPBU.xlsx';}
+  else if(type==='bbm'){headers=['Tanggal','Lambung','Jalur','No Polisi','Waktu Pengisian','Nominal','SPBU','Halte Terakhir','Jam Halte Terakhir','Keterangan'];sampleRows=[['2026-03-09','AB-001','Koridor 1','AB 1234 CD','06:30','200000','SPBU Jl. Magelang','Halte Malioboro','06:15','']];filename='Template_BBM.xlsx';}
+  else if(type==='ops'){headers=['Tanggal','Lambung','Jalur','No Polisi','Jam Mulai Pool','Jam Akhir Pool','Km Awal Pool','Km Akhir Pool','Km Awal Halte','Km Akhir Halte','RIT','Keterangan'];sampleRows=[['2026-03-09','AB-001','Koridor 1','AB 1234 CD','05:30','22:00','12500','12620','12510','12610','8','']];filename='Template_Operasional.xlsx';}
+  var ws=XLSX.utils.aoa_to_sheet([headers].concat(sampleRows));
+  ws['!cols']=headers.map(function(h){return{wch:Math.max(h.length+4,16)};});
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Template');XLSX.writeFile(wb,filename);
+  toast('Template '+filename+' berhasil didownload!');
+}
+function excelDateToStr(val) {
+  if (!val) return null;
+  // Sudah string format YYYY-MM-DD
+  if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) return val.substring(0,10);
+  // Format DD/MM/YYYY atau MM/DD/YYYY
+  if (typeof val === 'string' && val.includes('/')) {
+    var p = val.split('/');
+    if (p.length === 3) {
+      // Asumsi DD/MM/YYYY
+      return p[2].substring(0,4)+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+    }
+  }
+  // Angka serial Excel (hari sejak 1 Jan 1900, dengan bug leap year 1900)
+  if (typeof val === 'number') {
+    var d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    var y = d.getUTCFullYear();
+    var m = String(d.getUTCMonth()+1).padStart(2,'0');
+    var dd = String(d.getUTCDate()).padStart(2,'0');
+    return y+'-'+m+'-'+dd;
+  }
+  return String(val);
+}
+
+function excelTimeToStr(val) {
+  if (!val) return null;
+  // Jika sudah string format HH:MM atau HH:MM:SS
+  if (typeof val === 'string') {
+    var m = val.match(/^(\d{1,2}):(\d{2})/);
+    if (m) return m[1].padStart(2,'0')+':'+m[2]+':00';
+    return null;
+  }
+  // Jika angka desimal Excel (misal 0.8868 = 21:17)
+  if (typeof val === 'number') {
+    var totalMin = Math.round(val * 1440);
+    var h = Math.floor(totalMin / 60) % 24;
+    var mn = totalMin % 60;
+    return String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0')+':00';
+  }
+  return null;
+}
+
+async function importData(type, input) {
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      // Pastikan data BBM sudah terload untuk autofill ke operasional
+      if(type==='ops' && DB.bbm.length===0) await loadBBM();
+      var wb=XLSX.read(e.target.result,{type:'binary'}),ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:''});if(!rows.length)return toast('File kosong!',true);
+      var records=[];
+      // IDs generated by Supabase
+      if(type==='bus')records=rows.filter(function(r){return r.Lambung||r.lambung;}).map(function(r){return{lambung:r.Lambung||r.lambung,nopol:r['No Polisi']||r.nopol||'',jalur:r.Jalur||r.jalur||'',tipe:r['Tipe Bus']||r.tipe||'',karoseri:r.Karoseri||r.karoseri||'',warna:r['Warna Bus']||r.warna||'',ket:r.Keterangan||r.ket||''};});
+      else if(type==='spbu')records=rows.filter(function(r){return r['Nama SPBU']||r.nama;}).map(function(r){return{kode:r['ID SPBU']||r.kode||'',nama:r['Nama SPBU']||r.nama,alamat:r.Alamat||r.alamat||'',hp:r['No Hp']||r.hp||'',aktif:String(r.Status||'1').toLowerCase()==='aktif'||String(r.Status||'1')==='1'};});
+      else if(type==='bbm'){
+        var rawBBM=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){return{tgl:excelDateToStr(r.Tanggal||r.tgl),lambung:String(r.Lambung||r.lambung||'').trim(),jalur:r.Jalur||r.jalur||'',nopol:r['No Polisi']||r.nopol||'',waktu:excelTimeToStr(r['Waktu Pengisian']||r.waktu),nominal:parseFloat(r.Nominal||r.nominal||0),spbu:r.SPBU||r.spbu||'',halte:r['Halte Terakhir']||r.halte||'',jam_halte:excelTimeToStr(r['Jam Halte Terakhir']),ket:r.Keterangan||r.ket||''};});
+        var existingKeys={};
+        DB.bbm.forEach(function(b){existingKeys[String(b.lambung).trim()+'|'+String(b.tgl).substring(0,10)+'|'+String(b.waktu||'')+'|'+Number(b.nominal)]=true;});
+        var dupCount=0;
+        records=rawBBM.filter(function(r){
+          var key=String(r.lambung).trim()+'|'+String(r.tgl).substring(0,10)+'|'+String(r.waktu||'')+'|'+Number(r.nominal);
+          if(existingKeys[key]){dupCount++;return false;}
+          existingKeys[key]=true;
+          return true;
+        });
+        if(dupCount>0)toast('\u26a0\ufe0f '+dupCount+' baris dilewati (duplikat: tgl+lambung+waktu+nominal).',false);
+      } else if(type==='ops'){
+        // Fetch fresh BBM dari Supabase untuk lookup akurat
+        var bbmLookup = {};
+        toast('⏳ Mengambil data BBM...');
+        var bbmFetch = await fetchAll('bbm','tgl',false,'lambung',true);
+        var bbmSource = (bbmFetch.data && bbmFetch.data.length) ? bbmFetch.data : DB.bbm;
+        bbmSource.forEach(function(b){
+          var key = b.tgl+'|'+String(b.lambung).trim();
+          bbmLookup[key] = (bbmLookup[key]||0) + parseFloat(b.nominal||0);
+        });
+        records=rows.filter(function(r){return r.Tanggal||r.tgl;}).map(function(r){
+          var tglStr=excelDateToStr(r.Tanggal||r.tgl);
+          var lambStr=String(r.Lambung||r.lambung||'').trim();
+          var key=tglStr+'|'+lambStr;
+          // Ambil BBM dari DB jika ada, fallback ke kolom Excel
+          var bbmV = bbmLookup[key] || parseFloat(r['BBM (Rp)']||0);
+          var jm=excelTimeToStr(r['Jam Mulai Pool']),ja=excelTimeToStr(r['Jam Akhir Pool']);
+          var kmAP=parseFloat(r['Km Awal Pool'])||0,kmKP=parseFloat(r['Km Akhir Pool'])||0;
+          var kmAH=parseFloat(r['Km Awal Halte'])||0,kmKH=parseFloat(r['Km Akhir Halte'])||0;
+          var km=null,rat=null;
+          if(kmKP>0&&kmAP>0){km=parseFloat((kmKP-kmAP).toFixed(1));}
+          else if(kmKH>0&&kmAH>0){km=parseFloat((kmKH-kmAH).toFixed(1));}
+          if(km&&bbmV>0){rat=parseFloat((km/(bbmV/6800)).toFixed(2));}
+          return{tgl:tglStr,lambung:lambStr,jalur:r.Jalur||'',nopol:r['No Polisi']||'',jam_mulai:jm,jam_akhir:ja,km_awal_pool:r['Km Awal Pool']||null,km_akhir_pool:r['Km Akhir Pool']||null,km_awal_halte:r['Km Awal Halte']||null,km_akhir_halte:r['Km Akhir Halte']||null,bbm_rp:bbmV,rit:parseInt(r.RIT||0),km_tempuh:km,ratio:rat,ket:r.Keterangan||''};
+        });
+      }
+      if(!records.length)return toast('Tidak ada data valid!',true);
+      // Hitung berapa baris ops yang dapat data BBM dari lookup
+      var tbl=type==='ops'?'operasional':type;var inserted=0;
+      for(var i=0;i<records.length;i+=100){
+        var chunk=records.slice(i,i+100);
+        var res=await db.from(tbl).upsert(chunk,{ignoreDuplicates:true});
+        if(res.error){toast('Error import: '+res.error.message,true);return;}
+        inserted+=chunk.length;
+      }
+      input.value='';
+      if(type==='bus'){ markStale('bus'); await loadBus(true); }
+      if(type==='spbu'){ markStale('spbu'); await loadSpbu(true); }
+      if(type==='bbm'){ markStale('bbm','ops'); await loadBBM(true); }
+      if(type==='ops'){ markStale('ops','bbm'); await loadOps(true); }
+      updateDashboard();toast('✅ Import '+inserted+' data berhasil!');
+    }catch(err){toast('Gagal import: '+err.message,true);}
+  };
+  reader.readAsBinaryString(file);
+}
+function exportExcel(type) {
+  var data=[],fn='';
+  if(type==='bus'){data=DB.bus.map(function(r){return{ID:r.id,Lambung:r.lambung,'No Polisi':r.nopol,Jalur:r.jalur,'Tipe Bus':r.tipe,Karoseri:r.karoseri,'Warna Bus':r.warna,Keterangan:r.ket};});fn='DataBus.xlsx';}
+  if(type==='spbu'){data=DB.spbu.map(function(r){return{'Nama SPBU':r.nama,'ID SPBU':r.kode||'',Alamat:r.alamat,'No Hp':r.hp,Status:r.aktif?'Aktif':'Tidak Aktif'};});fn='DataSPBU.xlsx';}
+  if(type==='bbm'){data=DB.bbm.map(function(r){return{ID:r.id,Tanggal:r.tgl,Lambung:r.lambung,Jalur:r.jalur,'No Polisi':r.nopol,Waktu:r.waktu,Nominal:r.nominal,SPBU:r.spbu,Halte:r.halte,Keterangan:r.ket};});fn='DataBBM.xlsx';}
+  if(type==='ops'){data=DB.ops.map(function(r){return{ID:r.id,Tanggal:r.tgl,Lambung:r.lambung,Jalur:r.jalur,'No Polisi':r.nopol,'Jam Mulai':r.jamMulai,'Jam Akhir':r.jamAkhir,'BBM(Rp)':r.bbm,RIT:r.rit,'Km Tempuh':r.kmTempuh,Ratio:r.ratio,Keterangan:r.ket};});fn='DataOperasional.xlsx';}
+  if(!data.length)return toast('Tidak ada data!',true);
+  var ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Sheet1');XLSX.writeFile(wb,fn);toast('Export Excel berhasil!');
+}
+function exportExcelReport(type) {
+  var data=[],fn='';
+  if(type==='lap-bbm'){data=DB.bbm.map(function(r){return{Tanggal:r.tgl,Lambung:r.lambung,Nominal:r.nominal,SPBU:r.spbu};});fn='LaporanBBM.xlsx';}
+  if(type==='lap-ops'){data=DB.ops.map(function(r){return{Tanggal:r.tgl,Lambung:r.lambung,'BBM(Rp)':r.bbm,'Km Tempuh':r.kmTempuh,Ratio:r.ratio,RIT:r.rit};});fn='LaporanOperasional.xlsx';}
+  if(type==='lap-waktu'){data=DB.bbm.map(function(r){return{Tanggal:r.tgl,Lambung:r.lambung,'Waktu Pengisian':r.waktu,Nominal:r.nominal,SPBU:r.spbu};});fn='LaporanWaktuBBM.xlsx';}
+  if(!data.length)return toast('Tidak ada data!',true);
+  var ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Laporan');XLSX.writeFile(wb,fn);toast('Export Excel berhasil!');
+}
+function exportPDF(type) {
+  var jsPDF=window.jspdf.jsPDF,doc=new jsPDF();
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(26,92,42);
+  doc.text('TransJogja — Laporan',14,18);doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(100);
+  doc.text('Dicetak: '+new Date().toLocaleDateString('id-ID'),14,26);
+  doc.setDrawColor(45,138,62);doc.setLineWidth(0.5);doc.line(14,30,196,30);
+  var y=38,src=type==='lap-ops'?DB.ops:DB.bbm;
+  var hdrs=type==='lap-ops'?['Tgl','Lambung','Jalur','Jam Mulai','Jam Akhir','BBM(Rp)','RIT','Rasio']:['Tanggal','Lambung','Waktu','Nominal','SPBU'];
+  doc.setFillColor(26,92,42);doc.rect(14,y,182,7,'F');doc.setTextColor(255);doc.setFontSize(9);
+  var cw=182/hdrs.length;hdrs.forEach(function(h,i){doc.text(h,15+i*cw,y+5);});y+=9;
+  src.forEach(function(r,idx){
+    if(y>270){doc.addPage();y=20;}
+    doc.setFillColor(idx%2===0?245:255,idx%2===0?248:255,idx%2===0?245:255);doc.rect(14,y-1,182,7,'F');
+    doc.setTextColor(60);doc.setFont('helvetica','normal');
+    var vs=type==='lap-ops'?[r.tgl,r.lambung,r.jalur,r.jamMulai||'-',r.jamAkhir||'-','Rp'+r.bbm,String(r.rit||'-'),String(r.ratio||'-')]:[r.tgl,r.lambung,r.waktu||'-','Rp'+Number(r.nominal).toLocaleString(),r.spbu||'-'];
+    vs.forEach(function(v,j){doc.text(String(v).substring(0,18),15+j*cw,y+5);});y+=8;
+  });
+  doc.save('Laporan_'+type+'_TransJogja.pdf');toast('Export PDF berhasil!');
+}
+function previewFoto(input,previewId) {
+  var el=document.getElementById(previewId);
+  if(input.files[0])el.innerHTML='<img src="'+URL.createObjectURL(input.files[0])+'" style="max-width:160px;max-height:90px;border-radius:8px;border:2px solid var(--green-light);">';
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+async function updateDashboard() {
+  var results=await Promise.all([
+    db.from('bus').select('id',{count:'exact',head:true}),
+    db.from('spbu').select('id',{count:'exact',head:true}),
+    db.from('bbm').select('id',{count:'exact',head:true}),
+    db.from('operasional').select('id',{count:'exact',head:true})
+  ]);
+  document.getElementById('stat-bus').textContent=results[0].count||0;
+  document.getElementById('stat-bbm').textContent=results[2].count||0;
+  document.getElementById('stat-ops').textContent=results[3].count||0;
+  document.getElementById('stat-spbu').textContent=results[1].count||0;
+  document.getElementById('banner-bus').textContent=results[0].count||0;
+  var aktif=await db.from('spbu').select('id',{count:'exact',head:true}).eq('aktif',true);
+  document.getElementById('banner-spbu').textContent=aktif.count||0;
+  var today=new Date().toISOString().split('T')[0];
+  var todayOps=await db.from('operasional').select('id',{count:'exact',head:true}).eq('tgl',today);
+  document.getElementById('banner-ops').textContent=todayOps.count||0;
+  // Hitung antrian hari ini: BBM tanpa pasangan Ops (matching tgl+lambung)
+  var opsKeys={};
+  DB.ops.forEach(function(o){ if(o.tgl===today) opsKeys[String(o.lambung).trim()]=true; });
+  var bbmPending = DB.bbm.filter(function(b){ return b.tgl===today && !opsKeys[String(b.lambung).trim()]; }).length;
+  var elPending = document.getElementById('banner-pending');
+  if(elPending) elPending.textContent = bbmPending;
+  var days=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
+  var bbm7=await db.from('bbm').select('tgl').gte('tgl',days[0]);
+  var chart=document.getElementById('chart-bbm');
+  if(bbm7.data&&bbm7.data.length){
+    var cnts=days.map(function(d){return bbm7.data.filter(function(r){return r.tgl===d;}).length;});
+    var mx=Math.max.apply(null,cnts.concat([1]));
+    chart.innerHTML=cnts.map(function(c,i){return'<div class="bar-wrap"><div class="bar-val">'+c+'</div><div class="bar" style="height:'+Math.max((c/mx)*100,4)+'%"></div><div class="bar-label">'+days[i].slice(5)+'</div></div>';}).join('');
+  } else {
+    chart.innerHTML='<div style="display:flex;align-items:center;justify-content:center;width:100%;color:var(--gray-400);font-size:13px;">Belum ada data BBM</div>';
+  }
+  var acts=await Promise.all([
+    db.from('bbm').select('lambung,nominal,created_at').order('created_at',{ascending:false}).limit(5),
+    db.from('operasional').select('lambung,tgl,created_at').order('created_at',{ascending:false}).limit(5)
+  ]);
+  var actList=[].concat(
+    (acts[0].data||[]).map(function(r){return{icon:'⛽',title:'BBM '+r.lambung,meta:'Rp '+Number(r.nominal).toLocaleString(),time:new Date(r.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})};})
+  ).concat(
+    (acts[1].data||[]).map(function(r){return{icon:'📋',title:'Operasional '+r.lambung,meta:'Tgl '+r.tgl,time:new Date(r.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})};})
+  ).slice(0,8);
+  var al=document.getElementById('activity-list');
+  al.innerHTML=actList.length?actList.map(function(a){return'<div class="activity-item"><div class="activity-dot" style="background:var(--green-pale)">'+a.icon+'</div><div class="activity-info"><div class="title">'+a.title+'</div><div class="meta">'+a.meta+'</div></div><div class="activity-time">'+a.time+'</div></div>';}).join(''):'<div class="empty-state"><i class="fas fa-history"></i><p>Belum ada aktivitas</p></div>';
+}
+async function refreshData() {
+  var page=document.querySelector('.page.active');
+  var id=page?page.id.replace('page-',''):'';
+  markStale('bus','spbu','bbm','ops');
+  if(id==='data-bus')await loadBus(true); if(id==='data-spbu')await loadSpbu(true);
+  if(id==='input-bbm')await loadBBM(true); if(id==='input-ops')await loadOps(true);
+  await updateDashboard();toast('Data diperbarui!');
+}
