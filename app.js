@@ -409,7 +409,7 @@ function renderBbmTable() {
     // spbu stored as name string directly
     var bObj = DB.bus.find(function(b) { return b.lambung === x.lambung; });
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (i+1) + '</td><td>' + x.tgl + '</td><td><span class="badge-jenis-bbm">' + (x.jalur||'-') + '</span></td><td><strong>' + 'Unknown SPBU') + '<'Unknown SPBU') + '</strong></td><td>' + (bObj?bObj.lambung:'-') + '</td><td class="text-right"><strong>' + x.nominal.toLocaleString('id-ID') + ' L</strong></td><td><small class="text-muted">' + (x.ket||'-') + '</small></td><td class="action-cell"><button class="action-btn edit" onclick="editBbmBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteBbmBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
+    tr.innerHTML = '<td>' + (i+1) + '</td><td>' + x.tgl + '</td><td><span class="badge-jenis-bbm">' + (x.jalur||'-') + '</span></td><td><strong>' + (x.spbu||'-') + '</strong></td><td>' + (bObj?bObj.lambung:'-') + '</td><td class="text-right"><strong>' + x.nominal.toLocaleString('id-ID') + ' L</strong></td><td><small class="text-muted">' + (x.ket||'-') + '</small></td><td class="action-cell"><button class="action-btn edit" onclick="editBbmBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteBbmBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
     tbody.appendChild(tr);
   });
 }
