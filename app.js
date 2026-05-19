@@ -94,10 +94,10 @@ function markStale() {
   modules.forEach(function(m) { if (DB_STALE[m] !== undefined) DB_STALE[m] = true; });
 }
 
-async function loadBus(force)  { return safeFetchModule('bus',  'tj_bus',  'nopol',     force); }
-async function loadSpbu(force) { return safeFetchModule('spbu', 'tj_spbu', 'nama_spbu', force); }
-async function loadBBM(force)  { return safeFetchModule('bbm',  'tj_bbm',  'tanggal',   force); }
-async function loadOps(force)  { return safeFetchModule('ops',  'tj_ops',  'tanggal',   force); }
+async function loadBus(force)  { return safeFetchModule('bus',  'bus',  'nopol',     force); }
+async function loadSpbu(force) { return safeFetchModule('spbu', 'spbu', 'nama', force); }
+async function loadBBM(force)  { return safeFetchModule('bbm',  'bbm',  'tanggal',   force); }
+async function loadOps(force)  { return safeFetchModule('ops',  'operasional',  'tanggal',   force); }
 
 async function loadAkun() {
   try {
@@ -293,10 +293,10 @@ async function saveBus() {
   var payload = { nopol, lambung, jenis };
   try {
     if (editIdx.bus < 0) {
-      let { error } = await db.from('tj_bus').insert([payload]); if (error) throw error;
+      let { error } = await db.from('bus').insert([payload]); if (error) throw error;
       toast('Armada bus berhasil ditambahkan!');
     } else {
-      let { error } = await db.from('tj_bus').update(payload).eq('id', DB.bus[editIdx.bus].id); if (error) throw error;
+      let { error } = await db.from('bus').update(payload).eq('id', DB.bus[editIdx.bus].id); if (error) throw error;
       toast('Armada bus berhasil diperbarui!');
     }
     closeModal('modal-bus'); markStale('bus'); await loadBus(true); renderBusTable();
@@ -307,7 +307,7 @@ async function deleteBusBtn(id) {
   if (!hasPerm('bus', 'd')) { toast('Anda tidak memiliki izin menghapus data!', 'danger'); return; }
   if (!confirm('Apakah Anda yakin ingin menghapus armada bus ini?')) return;
   try {
-    let { error } = await db.from('tj_bus').delete().eq('id', id); if (error) throw error;
+    let { error } = await db.from('bus').delete().eq('id', id); if (error) throw error;
     toast('Armada bus berhasil dihapus.'); markStale('bus'); await loadBus(true); renderBusTable();
   } catch (err) { toast('Gagal menghapus data: ' + err.message, 'danger'); }
 }
@@ -320,11 +320,11 @@ function renderSpbuTable() {
   var q     = document.getElementById('search-spbu').value.toLowerCase();
   var tbody = document.getElementById('table-spbu-body');
   tbody.innerHTML = '';
-  var filtered = list.filter(function(x) { return x.nama_spbu.toLowerCase().includes(q) || x.lokasi.toLowerCase().includes(q); });
+  var filtered = list.filter(function(x) { return x.nama.toLowerCase().includes(q) || ( x.alamat||'').toLowerCase().includes(q); });
   if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-row">Tidak ada data SPBU.</td></tr>'; return; }
   filtered.forEach(function(x, i) {
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (i+1) + '</td><td><strong>' + x.nama_spbu + '</strong></td><td>' + (x.lokasi||'-') + '</td><td>' + (x.keterangan||'-') + '</td><td class="action-cell"><button class="action-btn edit" onclick="editSpbuBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteSpbuBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
+    tr.innerHTML = '<td>' + (i+1) + '</td><td><strong>' + x.nama + '</strong></td><td>' + (x.alamat||'-') + '</td><td>' + (x.ket||'-') + '</td><td class="action-cell"><button class="action-btn edit" onclick="editSpbuBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteSpbuBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
     tbody.appendChild(tr);
   });
 }
@@ -344,24 +344,24 @@ function editSpbuBtn(id) {
   var idx = DB.spbu.findIndex(function(x) { return x.id === id; }); if (idx < 0) return;
   editIdx.spbu = idx; var x = DB.spbu[idx];
   document.getElementById('modal-spbu-title').textContent = 'Ubah Data SPBU';
-  document.getElementById('spbu-nama').value   = x.nama_spbu;
-  document.getElementById('spbu-lokasi').value = x.lokasi;
-  document.getElementById('spbu-ket').value    = x.keterangan;
+  document.getElementById('spbu-nama').value   = x.nama;
+  document.getElementById('spbu-lokasi').value = x.alamat;
+  document.getElementById('spbu-ket').value    = x.ket;
   openModal('modal-spbu');
 }
 
 async function saveSpbu() {
   var nama   = document.getElementById('spbu-nama').value.trim();
-  var lokasi = document.getElementById('spbu-lokasi').value.trim();
+  var alamat = document.getElementById('spbu-lokasi').value.trim();
   var ket    = document.getElementById('spbu-ket').value.trim();
   if (!nama) { toast('Nama SPBU wajib diisi!', 'danger'); return; }
-  var payload = { nama_spbu: nama, lokasi, keterangan: ket };
+  var payload = { nama: nama, alamat: alamat, ket: ket };
   try {
     if (editIdx.spbu < 0) {
-      let { error } = await db.from('tj_spbu').insert([payload]); if (error) throw error;
+      let { error } = await db.from('spbu').insert([payload]); if (error) throw error;
       toast('Data SPBU ditambahkan.');
     } else {
-      let { error } = await db.from('tj_spbu').update(payload).eq('id', DB.spbu[editIdx.spbu].id); if (error) throw error;
+      let { error } = await db.from('spbu').update(payload).eq('id', DB.spbu[editIdx.spbu].id); if (error) throw error;
       toast('Data SPBU diperbarui.');
     }
     closeModal('modal-spbu'); markStale('spbu'); await loadSpbu(true); renderSpbuTable();
@@ -372,7 +372,7 @@ async function deleteSpbuBtn(id) {
   if (!hasPerm('spbu', 'd')) { toast('Anda tidak memiliki izin penghapusan!', 'danger'); return; }
   if (!confirm('Hapus data SPBU ini?')) return;
   try {
-    let { error } = await db.from('tj_spbu').delete().eq('id', id); if (error) throw error;
+    let { error } = await db.from('spbu').delete().eq('id', id); if (error) throw error;
     toast('SPBU terhapus.'); markStale('spbu'); await loadSpbu(true); renderSpbuTable();
   } catch (err) { toast('Gagal menghapus: ' + err.message, 'danger'); }
 }
@@ -383,11 +383,11 @@ async function deleteSpbuBtn(id) {
 function renderBbmTable() {
   var sSel = document.getElementById('bbm-spbu');
   sSel.innerHTML = '<option value="">-- Pilih SPBU --</option>';
-  DB.spbu.forEach(function(s) { sSel.innerHTML += '<option value="' + s.id + '">' + s.nama_spbu + '</option>'; });
+  DB.spbu.forEach(function(s) { sSel.innerHTML += '<option value="' + s.nama + '">' + s.nama + '</option>'; });
 
   var bSel = document.getElementById('bbm-bus');
   bSel.innerHTML = '<option value="">-- Pilih Bus (Opsional) --</option>';
-  DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.id + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
+  DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.lambung + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
 
   var tbody = document.getElementById('table-bbm-body');
   tbody.innerHTML = '';
@@ -396,20 +396,20 @@ function renderBbmTable() {
 
   var fSpbuEl = document.getElementById('filter-bbm-spbu');
   if (fSpbuEl.options.length <= 1) {
-    DB.spbu.forEach(function(s) { fSpbuEl.innerHTML += '<option value="' + s.id + '">' + s.nama_spbu + '</option>'; });
+    DB.spbu.forEach(function(s) { fSpbuEl.innerHTML += '<option value="' + s.nama + '">' + s.nama + '</option>'; });
     fSpbuEl.value = fSpbu;
   }
 
   var filtered = DB.bbm.filter(function(x) {
-    return (fTgl  ? x.tanggal === fTgl  : true) && (fSpbu ? x.spbu_id === fSpbu : true);
+    return (fTgl  ? x.tgl === fTgl  : true) && (fSpbu ? x.spbu === fSpbu : true);
   });
   if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-row">Tidak ada rekaman logistik BBM pada filter ini.</td></tr>'; return; }
 
   filtered.forEach(function(x, i) {
-    var sObj = DB.spbu.find(function(s) { return s.id === x.spbu_id; });
-    var bObj = DB.bus.find(function(b) { return b.id === x.bus_id; });
+    // spbu stored as name string directly
+    var bObj = DB.bus.find(function(b) { return b.lambung === x.lambung; });
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (i+1) + '</td><td>' + x.tanggal + '</td><td><span class="badge-jenis-bbm ' + x.jenis_transaksi + '">' + (x.jenis_transaksi==='masuk'?'Masuk':'Keluar') + '</span></td><td><strong>' + (sObj?sObj.nama_spbu:'Unknown SPBU') + '</strong></td><td>' + (bObj?bObj.lambung:'-') + '</td><td class="text-right"><strong>' + x.liter.toLocaleString('id-ID') + ' L</strong></td><td><small class="text-muted">' + (x.keterangan||'-') + '</small></td><td class="action-cell"><button class="action-btn edit" onclick="editBbmBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteBbmBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
+    tr.innerHTML = '<td>' + (i+1) + '</td><td>' + x.tgl + '</td><td><span class="badge-jenis-bbm">' + (x.jalur||'-') + '</span></td><td><strong>' + 'Unknown SPBU') + '<'Unknown SPBU') + '</strong></td><td>' + (bObj?bObj.lambung:'-') + '</td><td class="text-right"><strong>' + x.nominal.toLocaleString('id-ID') + ' L</strong></td><td><small class="text-muted">' + (x.ket||'-') + '</small></td><td class="action-cell"><button class="action-btn edit" onclick="editBbmBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteBbmBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
     tbody.appendChild(tr);
   });
 }
@@ -432,12 +432,12 @@ function editBbmBtn(id) {
   var idx = DB.bbm.findIndex(function(x) { return x.id === id; }); if (idx < 0) return;
   editIdx.bbm = idx; var x = DB.bbm[idx];
   document.getElementById('modal-bbm-title').textContent = 'Ubah Logistik BBM';
-  document.getElementById('bbm-tanggal').value = x.tanggal;
-  document.getElementById('bbm-jenis').value   = x.jenis_transaksi;
-  document.getElementById('bbm-spbu').value    = x.spbu_id || '';
-  document.getElementById('bbm-bus').value     = x.bus_id  || '';
-  document.getElementById('bbm-liter').value   = x.liter;
-  document.getElementById('bbm-ket').value     = x.keterangan || '';
+  document.getElementById('bbm-tanggal').value = x.tgl;
+  document.getElementById('bbm-jenis').value = x.jalur||'';
+  document.getElementById('bbm-spbu').value = x.spbu||'';
+  document.getElementById('bbm-bus').value = x.lambung||'';
+  document.getElementById('bbm-liter').value = x.nominal;
+  document.getElementById('bbm-ket').value     = x.ket || '';
   openModal('modal-bbm');
 }
 
@@ -449,13 +449,15 @@ async function saveBBM() {
   var liter      = parseFloat(document.getElementById('bbm-liter').value);
   var keterangan = document.getElementById('bbm-ket').value.trim();
   if (!tanggal || !spbu_id || isNaN(liter) || liter <= 0) { toast('Lengkapi kolom wajib dan volume liter harus positif!', 'danger'); return; }
-  var payload = { tanggal, jenis_transaksi: jenis, spbu_id, bus_id, liter, keterangan, diinput_oleh: currentUser.username };
+  // Map to Supabase columns
+  var busObj = bus_id ? DB.bus.find(function(b){ return b.lambung === bus_id; }) : null;
+  var payload = { tgl: tanggal, jalur: jenis, spbu: spbu_id, lambung: busObj ? busObj.lambung : null, nopol: busObj ? busObj.nopol : null, nominal: liter, ket: keterangan };
   try {
     if (editIdx.bbm < 0) {
-      let { error } = await db.from('tj_bbm').insert([payload]); if (error) throw error;
+      let { error } = await db.from('bbm').insert([payload]); if (error) throw error;
       toast('Log BBM tersimpan.');
     } else {
-      let { error } = await db.from('tj_bbm').update(payload).eq('id', DB.bbm[editIdx.bbm].id); if (error) throw error;
+      let { error } = await db.from('bbm').update(payload).eq('id', DB.bbm[editIdx.bbm].id); if (error) throw error;
       toast('Log BBM diperbarui.');
     }
     closeModal('modal-bbm'); markStale('bbm'); await loadBBM(true); renderBbmTable();
@@ -466,7 +468,7 @@ async function deleteBbmBtn(id) {
   if (!hasPerm('bbm', 'd')) { toast('Anda tidak memiliki otoritas hapus BBM!', 'danger'); return; }
   if (!confirm('Hapus transaksi BBM ini?')) return;
   try {
-    let { error } = await db.from('tj_bbm').delete().eq('id', id); if (error) throw error;
+    let { error } = await db.from('bbm').delete().eq('id', id); if (error) throw error;
     toast('Transaksi terhapus.'); markStale('bbm'); await loadBBM(true); renderBbmTable();
   } catch (err) { toast('Gagal: ' + err.message, 'danger'); }
 }
@@ -477,20 +479,20 @@ async function deleteBbmBtn(id) {
 function renderOpsTable() {
   var bSel = document.getElementById('ops-bus');
   bSel.innerHTML = '<option value="">-- Pilih Bus --</option>';
-  DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.id + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
+  DB.bus.forEach(function(b) { bSel.innerHTML += '<option value="' + b.lambung + '">' + b.lambung + ' (' + b.nopol + ')</option>'; });
 
   var tbody = document.getElementById('table-ops-body');
   tbody.innerHTML = '';
   var fTgl = document.getElementById('filter-ops-tgl').value;
-  var filtered = DB.ops.filter(function(x) { return fTgl ? x.tanggal === fTgl : true; });
+  var filtered = DB.ops.filter(function(x) { return fTgl ? x.tgl === fTgl : true; });
   if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="empty-row">Tidak ada rekaman operasional pada tanggal ini.</td></tr>'; return; }
 
   filtered.forEach(function(x, i) {
-    var bObj       = DB.bus.find(function(b) { return b.id === x.bus_id; });
-    var km_efektif = x.km_akhir - x.km_awal;
-    var rasio      = x.liter_bbm > 0 ? (km_efektif / x.liter_bbm).toFixed(2) : '-';
+    var bObj = DB.bus.find(function(b) { return b.lambung === x.lambung; });
+    var km_efektif = (x.km_akhir_pool||0) - (x.km_awal_pool||0);
+    var rasio      = x.bbm_rp > 0 ? (km_efektif / (x.bbm_rp/6800)).toFixed(2) : '-';
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (i+1) + '</td><td><strong>' + (bObj?bObj.lambung:'Unknown') + '</strong><br><small class="text-muted">' + (bObj?bObj.nopol:'') + '</small></td><td>' + (x.driver||'-') + '</td><td>' + (x.pramudi||'-') + '</td><td class="text-right">' + x.km_awal.toLocaleString('id-ID') + '</td><td class="text-right">' + x.km_akhir.toLocaleString('id-ID') + '</td><td class="text-right font-medium">' + km_efektif.toLocaleString('id-ID') + ' KM</td><td class="text-right font-medium text-success">' + x.liter_bbm + ' L</td><td class="text-center"><span class="badge-km-liter">' + rasio + ' km/L</span></td><td class="action-cell"><button class="action-btn edit" onclick="editOpsBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteOpsBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
+    tr.innerHTML = '<td>' + (i+1) + '</td><td><strong>' + (bObj?bObj.lambung:'Unknown') + '</strong><br><small class="text-muted">' + (bObj?bObj.nopol:'') + '</small></td><td>' + ('-') + '</td><td>' + (x.ket||'-') + '</td><td class="text-right">' + ( x.km_awal_pool||0).toLocaleString('id-ID') + '</td><td class="text-right">' + (x.km_akhir_pool||0).toLocaleString('id-ID') + '</td><td class="text-right font-medium">' + km_efektif.toLocaleString('id-ID') + ' KM</td><td class="text-right font-medium text-success">' + (x.bbm_rp ? (x.bbm_rp/6800).toFixed(1) : '-') + ' L</td><td class="text-center"><span class="badge-km-liter">' + rasio + ' km/L</span></td><td class="action-cell"><button class="action-btn edit" onclick="editOpsBtn(\'' + x.id + '\')"><i class="fas fa-edit"></i></button><button class="action-btn delete" onclick="deleteOpsBtn(\'' + x.id + '\')"><i class="fas fa-trash-alt"></i></button></td>';
     tbody.appendChild(tr);
   });
 }
@@ -511,14 +513,14 @@ function editOpsBtn(id) {
   var idx = DB.ops.findIndex(function(x) { return x.id === id; }); if (idx < 0) return;
   editIdx.ops = idx; var x = DB.ops[idx];
   document.getElementById('modal-ops-title').textContent = 'Ubah Operasional Harian';
-  document.getElementById('ops-tanggal').value = x.tanggal;
-  document.getElementById('ops-bus').value     = x.bus_id;
+  document.getElementById('ops-tanggal').value = x.tgl;
+  document.getElementById('ops-bus').value = x.lambung||'';
   document.getElementById('ops-driver').value  = x.driver   || '';
-  document.getElementById('ops-pramudi').value = x.pramudi  || '';
-  document.getElementById('ops-kmawal').value  = x.km_awal;
-  document.getElementById('ops-kmakhir').value = x.km_akhir;
-  document.getElementById('ops-liter').value   = x.liter_bbm;
-  document.getElementById('ops-ket').value     = x.keterangan || '';
+  document.getElementById('ops-pramudi').value = x.ket||''; // pramudi not in schema, stored in ket
+  document.getElementById('ops-kmawal').value = x.km_awal_pool||'';
+  document.getElementById('ops-kmakhir').value = x.km_akhir_pool||'';
+  document.getElementById('ops-liter').value = x.bbm_rp ? (x.bbm_rp/6800).toFixed(1) : '';
+  document.getElementById('ops-ket').value     = x.ket || '';
   openModal('modal-ops');
 }
 
@@ -533,13 +535,15 @@ async function saveOps() {
   var keterangan = document.getElementById('ops-ket').value.trim();
   if (!tanggal || !bus_id || isNaN(km_awal) || isNaN(km_akhir) || isNaN(liter_bbm)) { toast('Harap isi semua kolom wajib berangka!', 'danger'); return; }
   if (km_akhir < km_awal) { toast('KM Akhir tidak boleh lebih rendah dari KM Awal!', 'danger'); return; }
-  var payload = { tanggal, bus_id, driver, pramudi, km_awal, km_akhir, liter_bbm, keterangan, diinput_oleh: currentUser.username };
+  var busObjOps = DB.bus.find(function(b){ return b.lambung === bus_id || b.id === bus_id; });
+  var km_tempuh = km_akhir - km_awal;
+  var payload = { tgl: tanggal, lambung: busObjOps ? busObjOps.lambung : bus_id, nopol: busObjOps ? busObjOps.nopol : null, jalur: busObjOps ? busObjOps.jalur : null, km_awal_pool: km_awal, km_akhir_pool: km_akhir, km_tempuh: km_tempuh, bbm_rp: Math.round(liter_bbm * 6800), rit: 0, ket: keterangan };
   try {
     if (editIdx.ops < 0) {
-      let { error } = await db.from('tj_ops').insert([payload]); if (error) throw error;
+      let { error } = await db.from('operasional').insert([payload]); if (error) throw error;
       toast('Data harian tersimpan.');
     } else {
-      let { error } = await db.from('tj_ops').update(payload).eq('id', DB.ops[editIdx.ops].id); if (error) throw error;
+      let { error } = await db.from('operasional').update(payload).eq('id', DB.ops[editIdx.ops].id); if (error) throw error;
       toast('Data harian diperbarui.');
     }
     closeModal('modal-ops'); markStale('ops'); await loadOps(true); renderOpsTable();
@@ -550,7 +554,7 @@ async function deleteOpsBtn(id) {
   if (!hasPerm('ops', 'd')) { toast('Anda tidak mempunyai hak menghapus data operasional!', 'danger'); return; }
   if (!confirm('Hapus log operasional ini?')) return;
   try {
-    let { error } = await db.from('tj_ops').delete().eq('id', id); if (error) throw error;
+    let { error } = await db.from('operasional').delete().eq('id', id); if (error) throw error;
     toast('Terhapus.'); markStale('ops'); await loadOps(true); renderOpsTable();
   } catch (err) { toast('Gagal: ' + err.message, 'danger'); }
 }
@@ -566,17 +570,17 @@ async function updateDashboard() {
   var totalKM    = 0;
   var totalLiter = 0;
   DB.ops.forEach(function(x) {
-    if (x.tanggal && x.tanggal.substring(0, 7) === currMonth) {
-      totalKM    += (x.km_akhir - x.km_awal);
-      totalLiter += x.liter_bbm;
+    if (x.tgl && x.tgl.substring(0, 7) === currMonth) {
+      totalKM += ((x.km_akhir_pool||0) - (x.km_awal_pool||0));
+      totalLiter += x.bbm_rp ? x.bbm_rp/6800 : 0;
     }
   });
   document.getElementById('dash-total-km').textContent = totalKM.toLocaleString('id-ID') + ' KM';
 
   var bbmTotalLiter = 0;
   DB.bbm.forEach(function(x) {
-    if (x.tanggal && x.tanggal.substring(0, 7) === currMonth && x.jenis_transaksi === 'keluar') {
-      bbmTotalLiter += x.liter;
+    if (x.tgl && x.tgl.substring(0, 7) === currMonth) {
+      bbmTotalLiter += x.nominal ? Number(x.nominal) : 0;
     }
   });
   document.getElementById('dash-total-liter').textContent = Math.max(bbmTotalLiter, totalLiter).toLocaleString('id-ID') + ' L';
@@ -607,11 +611,11 @@ function renderRecentActivities() {
   if (!listEl) return;
   var combined = [];
   DB.bbm.slice(-5).forEach(function(b) {
-    combined.push({ tgl: b.tanggal, tipe: 'Logistik BBM', ket: (b.jenis_transaksi==='masuk'?'Pemasukan':'Pengeluaran') + ' BBM sebesar ' + b.liter + ' L', user: b.diinput_oleh||'system' });
+    combined.push({ tgl: b.tgl, tipe: 'Logistik BBM', ket: 'Pengisian BBM ' + (b.nominal||0) + ' Rp di ' + (b.spbu||'-'), user: 'system' });
   });
   DB.ops.slice(-5).forEach(function(o) {
-    var bObj = DB.bus.find(function(bus) { return bus.id === o.bus_id; });
-    combined.push({ tgl: o.tanggal, tipe: 'Operasional Harian', ket: 'Bus ' + (bObj?bObj.lambung:'-') + ' menempuh ' + (o.km_akhir - o.km_awal) + ' KM', user: o.diinput_oleh||'system' });
+    var bObj = DB.bus.find(function(bus) { return bus.lambung === o.lambung; });
+    combined.push({ tgl: o.tgl, tipe: 'Operasional Harian', ket: 'Bus ' + (o.lambung||'-') + ' menempuh ' + ((o.km_akhir_pool||0)-(o.km_awal_pool||0)) + ' KM', user: o.ket||'system' });
   });
   combined.sort(function(a, b) { return b.tgl.localeCompare(a.tgl); });
   var max5 = combined.slice(0, 5);
@@ -1417,7 +1421,7 @@ async function importData(type, input) {
         // Fetch fresh BBM dari Supabase untuk lookup akurat
         var bbmLookup = {};
         toast('⏳ Mengambil data BBM...');
-        var bbmFetch = await fetchAll('tj_bbm','tgl',false,'lambung',true);
+        var bbmFetch = await fetchAll('bbm','tgl',false,'lambung',true);
         var bbmSource = (bbmFetch.data && bbmFetch.data.length) ? bbmFetch.data : DB.bbm;
         bbmSource.forEach(function(b){
           var key = b.tgl+'|'+String(b.lambung).trim();
@@ -1441,7 +1445,7 @@ async function importData(type, input) {
       }
       if(!records.length)return toast('Tidak ada data valid!',true);
       // Hitung berapa baris ops yang dapat data BBM dari lookup
-      var tbl = type==='bus'?'tj_bus' : type==='spbu'?'tj_spbu' : type==='bbm'?'tj_bbm' : 'tj_ops';var inserted=0;
+      var tbl = type==='bus'?'bus' : type==='spbu'?'spbu' : type==='bbm'?'bbm' : 'operasional';var inserted=0;
       for(var i=0;i<records.length;i+=100){
         var chunk=records.slice(i,i+100);
         var res=await db.from(tbl).upsert(chunk,{ignoreDuplicates:true});
