@@ -156,8 +156,29 @@ function initSession() {
 function hasPerm(module, action) {
   if (!currentUser) return false;
   if (currentUser.role === 'admin') return true;
-  if (!currentUser.permissions || !currentUser.permissions[module]) return false;
-  return currentUser.permissions[module][action] === true;
+
+  // Format baru: { bus:{r,w,d}, bbm:{r,w,d}, ... }
+  var permsNew = currentUser.permissions;
+  if (permsNew && permsNew[module] && typeof permsNew[module] === 'object') {
+    return permsNew[module][action] === true;
+  }
+
+  // Format lama (dari DB): { menus:[...], actions:[...] }
+  var permsOld = currentUser.perms;
+  if (permsOld && Array.isArray(permsOld.menus)) {
+    // Map module id ke menu id
+    var menuMap = { bus:'data-bus', spbu:'data-spbu', bbm:'input-bbm', ops:'input-ops', akun:'manajemen-akun' };
+    var menuId = menuMap[module] || module;
+    var hasMenu = permsOld.menus.indexOf(menuId) >= 0 || permsOld.menus.indexOf(module) >= 0 || permsOld.menus.indexOf('dashboard') >= 0;
+    // read = punya akses menu
+    if (action === 'r') return hasMenu;
+    // write = punya akses menu + aksi tambah/edit
+    if (action === 'w') return hasMenu && (permsOld.actions.indexOf('tambah') >= 0 || permsOld.actions.indexOf('edit') >= 0);
+    // delete = punya akses menu + aksi hapus
+    if (action === 'd') return hasMenu && permsOld.actions.indexOf('hapus') >= 0;
+  }
+
+  return false;
 }
 
 function applyMenuVisibility() {
@@ -711,7 +732,7 @@ function renderAkunTable() {
   tbody.innerHTML = '';
   DB.akun.forEach(function(x, i) {
     var tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (i+1) + '</td><td><strong>' + x.nama + '</strong></td><td><code>' + x.username + '</code></td><td><span class="badge-role ' + x.role + '">' + x.role.toUpperCase() + '</span></td><td><small class="text-muted">' + (x.role==='admin'?'Full Akses Kontrol':JSON.stringify(x.permissions||{})) + '</small></td><td class="action-cell">' + (x.username==='admin'?'':'<button class="action-btn edit" onclick="editAkunBtn(\'' + x.id + '\')"><i class="fas fa-user-cog"></i></button><button class="action-btn delete" onclick="deleteAkunBtn(\'' + x.id + '\')"><i class="fas fa-user-minus"></i></button>') + '</td>';
+    tr.innerHTML = '<td>' + (i+1) + '</td><td><strong>' + x.nama + '</strong></td><td><code>' + x.username + '</code></td><td><span class="badge-role ' + x.role + '">' + x.role.toUpperCase() + '</span></td><td><small class="text-muted">' + (x.role==='admin'?'Full Akses Kontrol':JSON.stringify(x.perms||x.permissions||{})) + '</small></td><td class="action-cell">' + (x.username==='admin'?'':'<button class="action-btn edit" onclick="editAkunBtn(\'' + x.id + '\')"><i class="fas fa-user-cog"></i></button><button class="action-btn delete" onclick="deleteAkunBtn(\'' + x.id + '\')"><i class="fas fa-user-minus"></i></button>') + '</td>';
     tbody.appendChild(tr);
   });
 }
@@ -728,7 +749,7 @@ function renderPermGrid() {
     ALL_ACTIONS.forEach(function(a) {
       var checked = '';
       if (editIdx.akun >= 0) {
-        var ep = DB.akun[editIdx.akun].permissions;
+        var ep = DB.akun[editIdx.akun].perms || DB.akun[editIdx.akun].permissions;
         if (ep && ep[m.id] && ep[m.id][a.id]) checked = 'checked';
       } else {
         if (role === 'staf'  && a.id !== 'd') checked = 'checked';
@@ -783,7 +804,7 @@ async function saveAkun() {
       if (cb.checked) permissions[m][a] = true;
     });
   }
-  var payload = { nama, username, role, permissions };
+  var payload = { nama, username, role, perms: permissions };
   if (pass) payload.password = pass;
   try {
     if (editIdx.akun < 0) {
